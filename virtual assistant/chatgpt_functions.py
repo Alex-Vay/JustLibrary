@@ -1,7 +1,6 @@
 import time
 import g4f
 
-
 number_similar_books = 7
 
 def get_response(message):
