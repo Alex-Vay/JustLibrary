@@ -11,7 +11,7 @@ def get_response(message):
         g4f.Provider.AItianhuSpace,
         g4f.Provider.Liaobots,
     ]
-    current_provider_index = 0;
+    current_provider_index = 0
     while (current_provider_index < len(_providers)):
         try:
             response = g4f.ChatCompletion.create(
