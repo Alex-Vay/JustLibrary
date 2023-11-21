@@ -1,4 +1,5 @@
 import g4f
+from langdetect import detect
 
 number_similar_books = 7
 
@@ -20,6 +21,9 @@ def get_response(message):
                 provider=_providers[current_provider_index],
                 #stream=True,
             )
+            if (detect(response) == "en"):
+                current_provider_index += 1
+                continue
             return response
             #print(_providers[current_provider_index])
             # for message in response: #возможно переписать на ялд чтобы возвращал как бы онлайн
@@ -38,6 +42,7 @@ def get_response(message):
 '''
 def get_similar_books(book_name):
     return get_response("Приведи список из" + str(number_similar_books) + "похожих на " + book_name + "книг")
+#Приведи просто список (без дополнительных фраз или словосочетаний, помимо названия книг)\из" + str(number_similar_books) + "похожих на " + book_name + "книг")
 
 
 '''
