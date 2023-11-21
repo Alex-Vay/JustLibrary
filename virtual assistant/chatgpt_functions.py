@@ -1,4 +1,3 @@
-import time
 import g4f
 
 number_similar_books = 7
