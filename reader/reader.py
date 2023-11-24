@@ -65,7 +65,7 @@ def pdf_read(filepath):
     #можно получить какие-то данные, но они не достоверные, даже названия нет
 
 
-def doc_read(filepath):
+def docx_read(filepath):
     text = docx2txt.process(filepath)
     return Book(text, metadata_message)
 
@@ -85,15 +85,12 @@ def read_book(filepath):
             return mobi_read(filepath)
         case "pdf":
             return pdf_read(filepath)
-        case "doc":
-            return doc_read(filepath)
         case "docx":
-            return doc_read(filepath)
+            return docx_read(filepath)
         case "txt":
             return txt_read(filepath)
         case _:
             return Book("Я не работаю с таким форматом((", metadata_message)
-
 
 
 '''
