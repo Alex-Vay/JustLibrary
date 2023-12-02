@@ -1,6 +1,7 @@
 import sqlite3
 import epub_meta
 from tkinter import Tk, filedialog
+import requests
 
 root = Tk()
 
@@ -16,12 +17,13 @@ def create_table():
                  description TEXT DEFAULT 'Нет данных',
                  date_book INTEGER,
                  language_book TEXT DEFAULT 'Нет данных'
+                 
                  )''')
     conn.commit()
     conn.close()
 
 
-def get_metadata():
+def get_books():
     conn = sqlite3.connect('metadata.db')
     cursor = conn.cursor()
 
@@ -36,7 +38,7 @@ def get_metadata():
         conn.close()
 
 
-def update_metadata(metadata, book_id):
+def update_books(metadata, book_id):
     conn = sqlite3.connect('metadata.db')
     cursor = conn.cursor()
     cursor.execute("UPDATE books SET title=?, author=?, publisher=?, description=?, subject=?, date_book=?, language_book=? WHERE id=?",
@@ -55,6 +57,42 @@ def add_book(metadata):
                metadata['description'], metadata['date'], metadata['language']))
     conn.commit()
 
+def search_book(query):
+    url = 'https://www.googleapis.com/books/v1/volumes'
+    params = {'q': query}
+
+    try:
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        data = response.json()
+
+        if 'items' in data:
+            book = data['items'][0]['volumeInfo']
+            title = book.get('title', 'Нет данных')
+            author = book.get('authors', 'Нет данных')
+            description = book.get('description', 'Нет данных')
+            date = book.get('date', 'Нет данных')
+            publisher = book.get('publisher', 'Нет данных')
+            language = book.get('language', 'Нет данных')
+
+            book_info = {
+                'title': title,
+                'author': str(author).strip("[]'"),
+                'publisher': publisher,
+                'description': description,
+                'date': date,
+                'language': language,
+            }
+            return book_info
+
+        else:
+            print('По заданному запросу ничего не удалось найти')
+            return None
+
+    except requests.exceptions.RequestException as e:
+        print('Ошибка при выполнении запроса:', e)
+        return None
+
 
 
 def extract_metadata(file):
@@ -62,14 +100,13 @@ def extract_metadata(file):
         book = epub_meta.get_epub_metadata(file)
         metadata = {
             'title': str(book.title),
-            'author': str(book.authors).strip("[]"),
+            'author': str(book.authors).strip("[]'"),
             'publisher': str(book.publisher),
             'description': str(book.description).replace('\xa0', ' '),
             'date' : book.date,
             'language': str(book.language),
             'toc' : str(book.toc),
         }
-        metadata['author'] = metadata['author'].strip("'")
         return metadata
     except epub_meta.EpubParseError as e:
         print(f"Ошибка при извлечении метаданных: {e}")
@@ -89,16 +126,15 @@ while True:
 
     if choice == '1':
         print('1. Добавить файл')
-        #print('2. Ввести данные самостоятельно')
-        secondChoice = input('Выберите действие: ')
+        print('2. Загрузить данные из интернета')
+        secondChoice = input('Выберите команду: ')
         if secondChoice == '1':
             print('Выберете файл')
             selectedFile = filedialog.askopenfilename()
             root.withdraw()
-            create_table()  # Создаем таблицу в базе данных
+            create_table()
             metadata = extract_metadata(selectedFile)
-
-            cursor.execute("SELECT * FROM books WHERE title = ?", (metadata['title'],))
+            cursor.execute("SELECT * FROM books WHERE title = ? AND publisher=?", (metadata['title'],metadata['publisher']))
             isAlreadyExist = cursor.fetchone()
 
 
@@ -107,8 +143,12 @@ while True:
             else:
                 print("Книга добавлена")
                 add_book(metadata)
+        elif secondChoice == '2':
+            newBook = search_book(input('Введите название книги ') + 'книга')
+            add_book(newBook)
+
     elif choice == '2':
-        get_metadata()
+        get_books()
     elif choice == '3':
         cursor.execute('''DROP TABLE IF EXISTS books''')
         print("Книги удалены")
