@@ -30,7 +30,7 @@ def get_books():
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='books'")
     result = cursor.fetchone()
     if result is None:
-        print("Книги еще не добавлены")
+        print("Книги еще не добавлены!")
     else:
         cursor.execute("SELECT * FROM books")
         metadata = cursor.fetchall()
@@ -50,12 +50,20 @@ def update_books(metadata, book_id):
 def add_book(metadata):
     conn = sqlite3.connect('metadata.db')
     cursor = conn.cursor()
-    cursor.execute('''
-        INSERT INTO books (title, author, publisher, description, date_book, language_book)
-        VALUES (?, ?, ?, ?, ?, ?)
-    ''', (metadata['title'], (metadata['author']), metadata['publisher'],
-               metadata['description'], metadata['date'], metadata['language']))
-    conn.commit()
+    cursor.execute("SELECT * FROM books WHERE title = ? AND publisher=?", (metadata['title'], metadata['publisher']))
+    isAlreadyExist = cursor.fetchone()
+    answer = 'да'
+
+    if isAlreadyExist:
+        answer = input("Книга уже добавлена, хотете добавить её еще раз? (да / нет) ")
+    if answer.lower()[0] == 'д':
+        cursor.execute('''
+            INSERT INTO books (title, author, publisher, description, date_book, language_book)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (metadata['title'], (metadata['author']), metadata['publisher'],
+                   metadata['description'], metadata['date'], metadata['language']))
+        conn.commit()
+        print("Книга добавлена!")
 
 def search_book(query):
     url = 'https://www.googleapis.com/books/v1/volumes'
@@ -86,7 +94,7 @@ def search_book(query):
             return book_info
 
         else:
-            print('По заданному запросу ничего не удалось найти')
+            print('По заданному запросу ничего не удалось найти!')
             return None
 
     except requests.exceptions.RequestException as e:
@@ -112,6 +120,7 @@ def extract_metadata(file):
         print(f"Ошибка при извлечении метаданных: {e}")
         return None
 
+
 while True:
     conn = sqlite3.connect('metadata.db')
     cursor = conn.cursor()
@@ -121,12 +130,13 @@ while True:
     print('2. Показать все книги')
     print('3. Удалить все книги')
     print('4. Выйти')
-    print(' ' * 20)
-    choice = input('Выберите команду:')
+    print(' ')
+    choice = input('Выберите команду: ')
 
     if choice == '1':
         print('1. Добавить файл')
         print('2. Загрузить данные из интернета')
+        print(' ')
         secondChoice = input('Выберите команду: ')
         if secondChoice == '1':
             print('Выберете файл')
@@ -134,16 +144,9 @@ while True:
             root.withdraw()
             create_table()
             metadata = extract_metadata(selectedFile)
-            cursor.execute("SELECT * FROM books WHERE title = ? AND publisher=?", (metadata['title'],metadata['publisher']))
-            isAlreadyExist = cursor.fetchone()
-
-
-            if isAlreadyExist:
-                print("Книга уже добавлена")
-            else:
-                print("Книга добавлена")
-                add_book(metadata)
+            add_book(metadata)
         elif secondChoice == '2':
+            create_table()
             newBook = search_book(input('Введите название книги ') + 'книга')
             add_book(newBook)
 
@@ -151,8 +154,8 @@ while True:
         get_books()
     elif choice == '3':
         cursor.execute('''DROP TABLE IF EXISTS books''')
-        print("Книги удалены")
+        print("Книги удалены!")
     elif choice == '4':
         break
 else:
-    print('Некорректный выбор. Попробуйте снова.')
+    print('Некорректный выбор. Попробуйте снова!')
