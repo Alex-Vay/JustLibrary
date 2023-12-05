@@ -23,7 +23,7 @@ number_similar_books = 7
 #     print(response.text)
 
 def get_response(message):
-    api_key = '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'
+    api_key = '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'
     os.environ["OPENAI_API_KEY"] = api_key
     client = OpenAI(
         http_client=httpx.Client(
@@ -103,3 +103,9 @@ def retell_text(text_8k_limited):
         return get_response("Перескажи текст:\n" + text_8k_limited)
     except:
         return "Текст слишном большой для пересказа, для лучшего понимания советуем прочитать его самостоятельно)"
+
+print(retell_text(input()))
+print(get_similar_books("Капитанская дочка"))
+print(explain_term("Клан"))
+print(get_book_info("Капитанская дочка"))
+print(get_book_analogies("Капитанская дочка"))

@@ -90,7 +90,7 @@ def read_book(filepath):
         case "txt":
             return txt_read(filepath)
         case _:
-            return Book("Я не работаю с таким форматом((", metadata_message)
+            return "Я не работаю с таким форматом(("
 
 
 '''

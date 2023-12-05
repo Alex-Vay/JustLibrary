@@ -1,7 +1,7 @@
 import sqlite3
-import epub_meta
 from tkinter import Tk, filedialog
 import requests
+from reader.reader import read_book
 
 root = Tk()
 
@@ -16,41 +16,65 @@ def create_table():
                  publisher TEXT DEFAULT 'Нет данных',
                  description TEXT DEFAULT 'Нет данных',
                  date_book INTEGER,
-                 language_book TEXT DEFAULT 'Нет данных'
-                 
+                 language_book TEXT DEFAULT 'Нет данных',
+                 text TEXT DEFAULT 'Нет данных',
+                 tags TEXT DEFAULT 'Нет данных',
+                 format TEXT DEFAULT 'Нет данных',
+                 cover TEXT DEFAULT 'Нет данных',
+                 series TEXT DEFAULT 'Нет данных',
+                 series_index INTEGER,
+                 path TEXT DEFAULT 'Нет данных',
+                 categories TEXT DEFAULT 'Нет данных'
                  )''')
     conn.commit()
     conn.close()
+
+def get_book(book, cursor):
+    cursor.execute(f"SELECT * FROM books WHERE id= '{book}'")
+    metadata = cursor.fetchone()
+    conn.close()
+    return metadata[:2]
+
 
 
 def get_books():
     conn = sqlite3.connect('metadata.db')
     cursor = conn.cursor()
-
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='books'")
     result = cursor.fetchone()
     if result is None:
         print("Книги еще не добавлены!")
     else:
-        cursor.execute("SELECT * FROM books")
-        metadata = cursor.fetchall()
-        print(*metadata, sep = "\n")
+        cursor.execute("SELECT id FROM books")
+        books = cursor.fetchall()
+        for i in books: #list(map(lambda x: str(x).strip("(),"), books)):
+            print(get_book(i[0]), cursor)
         conn.close()
 
 
-def update_books(metadata, book_id):
+def update_books(metadata):
     conn = sqlite3.connect('metadata.db')
     cursor = conn.cursor()
-    cursor.execute("UPDATE books SET title=?, author=?, publisher=?, description=?, subject=?, date_book=?, language_book=? WHERE id=?",
+    cursor.execute("UPDATE books SET title=?, author=?, publisher=?, description=?, subject=?, date_book=?, language_book=?, " +
+                   "text=?, tags=?, format=?, cover=?, series=?, series_index=?, path=? WHERE id=?",
               (metadata['title'], (metadata['author']), metadata['publisher'],
-               metadata['description'], metadata['date'], metadata['language']))
+               metadata['description'], metadata['date'], metadata['language'],
+               metadata['text'], metadata['tags'], metadata['format'], metadata['cover'],
+               metadata['series'], metadata['series_index'], metadata['path']))
     conn.commit()
     conn.close()
+
+def update_field(book_id, field_name, text):
+    conn = sqlite3.connect('metadata.db')
+    cursor = conn.cursor()
+    cursor.execute(f"UPDATE books SET {field_name} = ? WHERE id = ?", ((text, book_id)))
+    conn.commit()
+
 
 def add_book(metadata):
     conn = sqlite3.connect('metadata.db')
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM books WHERE title = ? AND publisher=?", (metadata['title'], metadata['publisher']))
+    cursor.execute("SELECT * FROM books WHERE title = ? AND path=?", (metadata['title'], metadata['path']))
     isAlreadyExist = cursor.fetchone()
     answer = 'да'
 
@@ -58,10 +82,13 @@ def add_book(metadata):
         answer = input("Книга уже добавлена, хотете добавить её еще раз? (да / нет) ")
     if answer.lower()[0] == 'д':
         cursor.execute('''
-            INSERT INTO books (title, author, publisher, description, date_book, language_book)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO books (title, author, publisher, description, date_book, language_book, text, tags, format, cover,
+            series, series_index, path)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (metadata['title'], (metadata['author']), metadata['publisher'],
-                   metadata['description'], metadata['date'], metadata['language']))
+               metadata['description'], metadata['date'], metadata['language'],
+               metadata['text'], metadata['tags'], metadata['format'], metadata['cover'],
+               metadata['series'], metadata['series_index'], metadata['path']))
         conn.commit()
         print("Книга добавлена!")
 
@@ -86,7 +113,7 @@ def search_book(query):
             book_info = {
                 'title': title,
                 'author': str(author).strip("[]'"),
-                'publisher': publisher,
+                #'publisher': publisher,
                 'description': description,
                 'date': date,
                 'language': language,
@@ -102,23 +129,33 @@ def search_book(query):
         return None
 
 
-
 def extract_metadata(file):
+    book = read_book(file)
     try:
-        book = epub_meta.get_epub_metadata(file)
-        metadata = {
-            'title': str(book.title),
-            'author': str(book.authors).strip("[]'"),
-            'publisher': str(book.publisher),
-            'description': str(book.description).replace('\xa0', ' '),
-            'date' : book.date,
-            'language': str(book.language),
-            'toc' : str(book.toc),
-        }
-        return metadata
-    except epub_meta.EpubParseError as e:
-        print(f"Ошибка при извлечении метаданных: {e}")
-        return None
+        text = book.text
+        meta = book.metadata
+        if (not isinstance(meta, str)):
+            print(meta)
+            metadata = {
+                'title': str(meta.title),
+                'author': str(meta.author_list).strip("[]'"),
+                'publisher': str(meta.publish_info.publisher),
+                'description': str(meta.description).replace('\xa0', ' '),
+                'date': meta.publish_info.year,
+                'language': str(meta.lang),
+                'text': text,
+                'tags': str(meta.tag_list).strip("[]'"),
+                'format': meta.format,
+                'cover': meta.cover_image_data,
+                'series': meta.series,
+                'series_index': meta.series_index,
+                'path': meta.file
+            }
+            return metadata
+        return {'title': '', 'author': '', 'publisher': '', 'description': '', 'date': '', 'language': '',
+                'text': text, 'tags': '',  'format': '', 'cover': '', 'series': '', 'series_index': '', 'path': meta.file}
+    except:
+        return book
 
 
 while True:
@@ -130,6 +167,7 @@ while True:
     print('2. Показать все книги')
     print('3. Удалить все книги')
     print('4. Выйти')
+    print('5. Изменить поле')
     print(' ')
     choice = input('Выберите команду: ')
 
@@ -144,6 +182,9 @@ while True:
             root.withdraw()
             create_table()
             metadata = extract_metadata(selectedFile)
+            if (isinstance(metadata, str)):
+                print(metadata)
+                continue
             add_book(metadata)
         elif secondChoice == '2':
             create_table()
@@ -157,5 +198,10 @@ while True:
         print("Книги удалены!")
     elif choice == '4':
         break
+    elif choice == '5':
+        book_id = input('Введите ид книги: ')
+        field_name = input('Введите имя поля книги: ')
+        text = input('Введите текст : ')
+        update_field(book_id, field_name, text)
 else:
     print('Некорректный выбор. Попробуйте снова!')
