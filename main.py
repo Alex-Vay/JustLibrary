@@ -74,11 +74,8 @@ def update_field(book_id, field_name, text):
 def add_book(metadata):
     conn = sqlite3.connect('metadata.db')
     cursor = conn.cursor()
-    try:
-        cursor.execute("SELECT * FROM books WHERE path=?", (metadata['path'],))
-        isAlreadyExist = cursor.fetchone()
-    except:
-        isAlreadyExist = False
+    cursor.execute("SELECT * FROM books WHERE path=?", (metadata['path'],))
+    isAlreadyExist = cursor.fetchone()
     answer = 'да'
 
     if isAlreadyExist:
