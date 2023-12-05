@@ -74,8 +74,11 @@ def update_field(book_id, field_name, text):
 def add_book(metadata):
     conn = sqlite3.connect('metadata.db')
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM books WHERE title = ? AND path=?", (metadata['title'], metadata['path']))
-    isAlreadyExist = cursor.fetchone()
+    try:
+        cursor.execute("SELECT * FROM books WHERE path=?", (metadata['path'],))
+        isAlreadyExist = cursor.fetchone()
+    except:
+        isAlreadyExist = False
     answer = 'да'
 
     if isAlreadyExist:
@@ -91,6 +94,7 @@ def add_book(metadata):
                metadata['series'], metadata['series_index'], metadata['path']))
         conn.commit()
         print("Книга добавлена!")
+
 
 def search_book(query):
     url = 'https://www.googleapis.com/books/v1/volumes'
@@ -134,7 +138,7 @@ def extract_metadata(file):
     try:
         text = book.text
         meta = book.metadata
-        if (not isinstance(meta, str)):
+        if not (isinstance(meta, str)):
             print(meta)
             metadata = {
                 'title': str(meta.title),
@@ -152,8 +156,8 @@ def extract_metadata(file):
                 'path': meta.file
             }
             return metadata
-        return {'title': '', 'author': '', 'publisher': '', 'description': '', 'date': '', 'language': '',
-                'text': text, 'tags': '',  'format': '', 'cover': '', 'series': '', 'series_index': '', 'path': meta.file}
+        return {'title': None, 'author': None, 'publisher': None, 'description': None, 'date': None, 'language': None,
+                'text': text, 'tags': None,  'format': None, 'cover': None, 'series': None, 'series_index': None, 'path': file}
     except:
         return book
 
