@@ -3,26 +3,26 @@ from customtkinter import CTk
 from PIL import ImageTk
 
 window = CTk()
-window.overrideredirect(1)
+#window.overrideredirect(1) убирает возможность закрыть/свернуть/ужать приложение
 window.geometry("{0}x{1}+0+0".format(window.winfo_screenwidth(), window.winfo_screenheight()))
 
 index = customtkinter.CTkFrame(window, fg_color="#99621E")
 myLibrary = customtkinter.CTkFrame(window, fg_color="#99621E")
 navigation = customtkinter.CTkFrame(window, fg_color="#B8860B")
+reader = customtkinter.CTkFrame(window)
+frames = [index, myLibrary, reader]
 navigation.place(x=0, y=0, relheight=1)
 
 search = ImageTk.PhotoImage(file="search.png")
 robot = ImageTk.PhotoImage(file="robot.png")
 
 
-def show_index():
-    index.pack(expand=True, fill="both")
-    myLibrary.pack_forget()
-
-
-def show_myLibrary():
-    index.pack_forget()
-    myLibrary.pack(expand=True, fill="both")
+def show_frame(frame):
+    frame.pack(expand=True, fill="both")
+    for i in frames:
+        if frame is not i:
+            print(i)
+            i.pack_forget()
 
 
 def exit_app():
@@ -39,7 +39,7 @@ def clear_entryMyLibrary(event):
 
 labelIndex = customtkinter.CTkLabel(index, text="Главная", text_color="#BDB76B")
 labelIndex.configure(font=("Verdana", 64, "bold"))
-labelIndex.pack()
+labelIndex.place(x=800, y = 10)
 
 recentlyOpened = customtkinter.CTkLabel(index, text="Недавно открытые:", text_color="#BDB76B")
 recentlyOpened.configure(font=("Verdana", 50, "bold"))
@@ -87,9 +87,9 @@ btnMyLibrary.place(x=980, y=100)
 
 labelMyLibrary = customtkinter.CTkLabel(myLibrary, text="Моя библиотека", text_color="#BDB76B")
 labelMyLibrary.configure(font=("Verdana", 64, "bold"))
-labelMyLibrary.pack()
+labelMyLibrary.place(x=700, y=10)
 
-btnMain = customtkinter.CTkButton(navigation, text="Главная", command=show_index)
+btnMain = customtkinter.CTkButton(navigation, text="Главная", command=lambda: show_frame(index))
 btnMain.configure(font=("Verdana", 32, "bold"), width=50,
                   fg_color="#99621E",
                   hover_color="#F0E68C",
@@ -99,7 +99,7 @@ btnMain.configure(font=("Verdana", 32, "bold"), width=50,
                   corner_radius=10,)
 btnMain.place(x=10, y=60)
 
-btnLibrary = customtkinter.CTkButton(navigation, text="Моя\nбиблиотека", command=show_myLibrary)
+btnLibrary = customtkinter.CTkButton(navigation, text="Моя\nбиблиотека", command=lambda: show_frame(myLibrary))
 btnLibrary.configure(font=("Verdana", 22, "bold"), width=30,
                      fg_color="#99621E",
                      hover_color="#F0E68C",
@@ -119,6 +119,5 @@ btnExit.configure(font=("Verdana", 42, "bold"), width=160,
                      corner_radius=10)
 btnExit.place(x=10, y=780)
 
-
-show_index()
+show_frame(index)
 window.mainloop()
