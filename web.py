@@ -13,8 +13,8 @@ reader = customtkinter.CTkFrame(window)
 frames = [index, myLibrary, reader]
 navigation.place(x=0, y=0, relheight=1)
 
-search = ImageTk.PhotoImage(file="search.png")
-robot = ImageTk.PhotoImage(file="robot.png")
+search = ImageTk.PhotoImage(file="img/search.png")
+robot = ImageTk.PhotoImage(file="img/robot.png")
 
 
 def show_frame(frame):
