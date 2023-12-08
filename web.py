@@ -5,8 +5,12 @@ from main import create_table, extract_metadata, add_book
 from tkinter import filedialog
 
 window = CTk()
-#window.overrideredirect(1) убирает возможность закрыть/свернуть/ужать приложение
+#window.overrideredirect(1) #убирает возможность закрыть/свернуть/ужать приложение
 window.geometry("{0}x{1}+0+0".format(window.winfo_screenwidth(), window.winfo_screenheight()))
+
+FONTCOF = 18/26
+SPACECOF = 42/26
+TEXTSIZE = 36
 
 index = customtkinter.CTkFrame(window, fg_color="#99621E")
 myLibrary = customtkinter.CTkFrame(window, fg_color="#99621E")
@@ -27,15 +31,28 @@ def show_frame(frame):
 
 
 def click_to_add_book():
-    #из-за ряда функций, которые ждут ответа от пользователя, может уйти в бесконечную загрузку
-    print('Выберете файл')
     selectedFile = filedialog.askopenfilename()
     create_table()
     metadata = extract_metadata(selectedFile)
     if (isinstance(metadata, str)):
-        print(metadata)
-        return
+        return (metadata)
     add_book(metadata)
+    readerTextBox.configure(state="normal")
+    readerTextBox.insert("0.0", metadata['text'])
+    readerTextBox.configure(state="disabled")
+    show_frame(reader)
+
+
+def s():
+    line = round(1020 / (TEXTSIZE*(FONTCOF + SPACECOF) - FONTCOF*TEXTSIZE*0.9))
+    start_index = readerTextBox.index("@0,0")  # Получаем индекс начала видимой области
+    end_index = readerTextBox.index(f"@0,0 + {line}l")  # Получаем индекс конца видимой области
+    visible_text = readerTextBox.get(start_index, end_index)  # Получаем видимую часть текста
+    # visible_lines = readerTextBox.yview()
+    print(end_index)
+    print("Видимая часть текста:", visible_text)
+    window.after(5000, s)
+
 
 
 def exit_app():
@@ -103,6 +120,12 @@ labelMyLibrary = customtkinter.CTkLabel(myLibrary, text="Моя библиоте
 labelMyLibrary.configure(font=("Verdana", 64, "bold"))
 labelMyLibrary.place(x=700, y=10)
 
+readerTextBox = customtkinter.CTkTextbox(reader)
+readerTextBox.place(x=200, y=0)
+readerTextBox.configure(font=("Calibre", TEXTSIZE),
+                        width=1720, height=1020,
+                        wrap="word")
+
 btnMain = customtkinter.CTkButton(navigation, text="Главная", command=lambda: show_frame(index))
 btnMain.configure(font=("Verdana", 32, "bold"), width=50,
                   fg_color="#99621E",
@@ -154,4 +177,12 @@ btnExit.configure(font=("Verdana", 42, "bold"), width=160,
 btnExit.place(x=10, y=780)
 
 show_frame(index)
+def check_open_frame():
+    if reader.winfo_ismapped():
+        print("Фрейм 1 открыт")
+    else:
+        print("no")
+    window.after(1000, check_open_frame)
+
+s()
 window.mainloop()

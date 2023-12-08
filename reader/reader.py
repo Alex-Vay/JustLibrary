@@ -1,3 +1,5 @@
+import re
+
 import mobi
 import html2text
 import ebookmeta
@@ -80,19 +82,21 @@ def read_book(filepath):
     path = filepath.split(".")
     match path[len(path)-1]:
         case "fb2":
-            return fb2_read(filepath)
+            metadata = fb2_read(filepath)
         case "epub":
-            return epub_read(filepath)
+            metadata = epub_read(filepath)
         case "mobi":
-            return mobi_read(filepath)
+            metadata = mobi_read(filepath)
         case "pdf":
-            return pdf_read(filepath)
+            metadata = pdf_read(filepath)
         case "docx":
-            return docx_read(filepath)
+            metadata = docx_read(filepath)
         case "txt":
-            return txt_read(filepath)
+            metadata = txt_read(filepath)
         case _:
             return "Я не работаю с таким форматом(("
+    metadata.text = re.sub(r"(?<!\n)\n(?!\n)", " ", metadata.text)
+    return metadata
 
 
 '''
