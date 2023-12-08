@@ -31,7 +31,7 @@ def get_book(book, cursor):
     cursor.execute(f"SELECT * FROM books WHERE id= '{book}'")
     metadata = cursor.fetchone()
     conn.close()
-    return metadata[:2]
+    return metadata
 
 
 
@@ -45,9 +45,13 @@ def get_books():
     else:
         cursor.execute("SELECT id FROM books")
         books = cursor.fetchall()
-        for i in books: #list(map(lambda x: str(x).strip("(),"), books)):
-            print(get_book(i[0]), cursor)
+        cursor.execute("SELECT * FROM books")
+        books_fetch = cursor.fetchall()
+        # для получения одной книги
+        # for i in books: #list(map(lambda x: str(x).strip("(),"), books)):
+        #     print(get_book(i[0], cursor))
         conn.close()
+        return books_fetch
 
 
 def update_books(metadata):

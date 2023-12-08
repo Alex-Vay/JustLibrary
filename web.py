@@ -10,8 +10,8 @@ window.geometry("{0}x{1}+0+0".format(window.winfo_screenwidth(), window.winfo_sc
 
 index = customtkinter.CTkFrame(window, fg_color="#99621E")
 myLibrary = customtkinter.CTkFrame(window, fg_color="#99621E")
+reader = customtkinter.CTkFrame(window, fg_color="#99621E")
 navigation = customtkinter.CTkFrame(window, fg_color="#B8860B")
-reader = customtkinter.CTkFrame(window, fg_color="#000000")
 frames = [index, myLibrary, reader]
 navigation.place(x=0, y=0, relheight=1)
 
@@ -20,11 +20,10 @@ robot = ImageTk.PhotoImage(file="img/robot.png")
 
 
 def show_frame(frame):
-    frame.pack(expand=True, fill="both")
     for i in frames:
         if frame is not i:
-            print(i)
             i.pack_forget()
+    frame.pack(expand=True, fill="both")
 
 
 def click_to_add_book():
@@ -50,10 +49,11 @@ def clear_entryVirtualAssistant(event):
 def clear_entryMyLibrary(event):
     entryMyLibrary.delete(0, customtkinter.END)
 
+labelIndex = customtkinter.CTkLabel(reader, text="Главная", text_color="#BDB76B")
 
 labelIndex = customtkinter.CTkLabel(index, text="Главная", text_color="#BDB76B")
 labelIndex.configure(font=("Verdana", 64, "bold"))
-labelIndex.place(x=800, y = 10)
+labelIndex.place(x=800, y=10)
 
 recentlyOpened = customtkinter.CTkLabel(index, text="Недавно открытые:", text_color="#BDB76B")
 recentlyOpened.configure(font=("Verdana", 50, "bold"))
@@ -78,20 +78,6 @@ btnIndex.configure(font=("Verdana", 16, "bold"), width=90,
                    corner_radius=10,
                    hover_color="#F0E68C")
 btnIndex.place(x=830, y=100)
-
-
-
-btn2Index = customtkinter.CTkButton(navigation, text="Добавить книгу", command=click_to_add_book)
-btn2Index.configure(font=("Verdana", 16, "bold"), width=90,
-                   text_color="#99621E",
-                   fg_color="#B8860B",
-                   border_width=3,
-                   border_color="black",
-                   corner_radius=10,
-                   hover_color="#F0E68C")
-btn2Index.place(x=830, y=400)
-
-
 
 entryMyLibrary = customtkinter.CTkEntry(myLibrary, justify='center')
 entryMyLibrary.configure(font=("Verdana", 18, "bold"), width=500, height=35,
@@ -136,6 +122,26 @@ btnLibrary.configure(font=("Verdana", 22, "bold"), width=30,
                      border_color="black",
                      corner_radius=10)
 btnLibrary.place(x=10, y=150)
+
+btnReader = customtkinter.CTkButton(navigation, text="Читалка", command=lambda: show_frame(reader))
+btnReader.configure(font=("Verdana", 22, "bold"), width=170, height=60,
+                     fg_color="#99621E",
+                     hover_color="#F0E68C",
+                     text_color="#B8860B",
+                     border_width=3,
+                     border_color="black",
+                     corner_radius=10)
+btnReader.place(x=10, y=240)
+
+btnAddBook = customtkinter.CTkButton(navigation, text="Добавить\nкнигу", command=click_to_add_book)
+btnAddBook.configure(font=("Verdana", 22, "bold"), width=170,
+                     fg_color="#99621E",
+                     hover_color="#F0E68C",
+                     text_color="#B8860B",
+                     border_width=3,
+                     border_color="black",
+                     corner_radius=10)
+btnAddBook.place(x=10, y=330)
 
 btnExit = customtkinter.CTkButton(navigation, text="Выйти", command=exit_app)
 btnExit.configure(font=("Verdana", 42, "bold"), width=160,
