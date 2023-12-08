@@ -1,5 +1,4 @@
 import re
-
 import mobi
 import html2text
 import ebookmeta
