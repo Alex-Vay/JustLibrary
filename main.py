@@ -74,21 +74,17 @@ def add_book(metadata):
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM books WHERE path=?", (metadata['path'],))
     isAlreadyExist = cursor.fetchone()
-    answer = 'да'
-
-    if isAlreadyExist:
-        answer = input("Книга уже добавлена, хотете добавить её еще раз? (да / нет) ")
-    if answer.lower()[0] == 'д':
-        cursor.execute('''
-            INSERT INTO books (title, author, publisher, description, date_book, language_book, text, tags, format, cover,
-            series, series_index, path)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (metadata['title'], (metadata['author']), metadata['publisher'],
-               metadata['description'], metadata['date'], metadata['language'],
-               metadata['text'], metadata['tags'], metadata['format'], metadata['cover'],
-               metadata['series'], metadata['series_index'], metadata['path']))
-        conn.commit()
-        print("Книга добавлена!")
+    if isAlreadyExist: return
+    cursor.execute('''
+        INSERT INTO books (title, author, publisher, description, date_book, language_book, text, tags, format, cover,
+        series, series_index, path)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (metadata['title'], (metadata['author']), metadata['publisher'],
+           metadata['description'], metadata['date'], metadata['language'],
+           metadata['text'], metadata['tags'], metadata['format'], metadata['cover'],
+           metadata['series'], metadata['series_index'], metadata['path']))
+    conn.commit()
+    print("Книга добавлена!")
 
 
 def search_book(query):

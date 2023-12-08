@@ -11,7 +11,7 @@ window.geometry("{0}x{1}+0+0".format(window.winfo_screenwidth(), window.winfo_sc
 index = customtkinter.CTkFrame(window, fg_color="#99621E")
 myLibrary = customtkinter.CTkFrame(window, fg_color="#99621E")
 navigation = customtkinter.CTkFrame(window, fg_color="#B8860B")
-reader = customtkinter.CTkFrame(window)
+reader = customtkinter.CTkFrame(window, fg_color="#000000")
 frames = [index, myLibrary, reader]
 navigation.place(x=0, y=0, relheight=1)
 
@@ -81,7 +81,7 @@ btnIndex.place(x=830, y=100)
 
 
 
-btn2Index = customtkinter.CTkButton(index, text="Добавить книгу", command=click_to_add_book)
+btn2Index = customtkinter.CTkButton(navigation, text="Добавить книгу", command=click_to_add_book)
 btn2Index.configure(font=("Verdana", 16, "bold"), width=90,
                    text_color="#99621E",
                    fg_color="#B8860B",
