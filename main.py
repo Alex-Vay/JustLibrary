@@ -3,8 +3,6 @@ from tkinter import Tk, filedialog
 import requests
 from reader.reader import read_book
 
-root = Tk()
-
 def create_table():
     conn = sqlite3.connect('metadata.db')
     cursor = conn.cursor()
@@ -158,51 +156,52 @@ def extract_metadata(file):
     except:
         return book
 
+if __name__ == "__main__":
+    root = Tk()
+    while True:
+        conn = sqlite3.connect('metadata.db')
+        cursor = conn.cursor()
 
-while True:
-    conn = sqlite3.connect('metadata.db')
-    cursor = conn.cursor()
-
-    print('-'*20)
-    print('1. Добавить книгу')
-    print('2. Показать все книги')
-    print('3. Удалить все книги')
-    print('4. Выйти')
-    print('5. Изменить поле')
-    print(' ')
-    choice = input('Выберите команду: ')
-
-    if choice == '1':
-        print('1. Добавить файл')
-        print('2. Загрузить данные из интернета')
+        print('-'*20)
+        print('1. Добавить книгу')
+        print('2. Показать все книги')
+        print('3. Удалить все книги')
+        print('4. Выйти')
+        print('5. Изменить поле')
         print(' ')
-        secondChoice = input('Выберите команду: ')
-        if secondChoice == '1':
-            print('Выберете файл')
-            selectedFile = filedialog.askopenfilename()
-            root.withdraw()
-            create_table()
-            metadata = extract_metadata(selectedFile)
-            if (isinstance(metadata, str)):
-                print(metadata)
-                continue
-            add_book(metadata)
-        elif secondChoice == '2':
-            create_table()
-            newBook = search_book(input('Введите название книги ') + 'книга')
-            add_book(newBook)
+        choice = input('Выберите команду: ')
 
-    elif choice == '2':
-        get_books()
-    elif choice == '3':
-        cursor.execute('''DROP TABLE IF EXISTS books''')
-        print("Книги удалены!")
-    elif choice == '4':
-        break
-    elif choice == '5':
-        book_id = input('Введите ид книги: ')
-        field_name = input('Введите имя поля книги: ')
-        text = input('Введите текст : ')
-        update_field(book_id, field_name, text)
-else:
-    print('Некорректный выбор. Попробуйте снова!')
+        if choice == '1':
+            print('1. Добавить файл')
+            print('2. Загрузить данные из интернета')
+            print(' ')
+            secondChoice = input('Выберите команду: ')
+            if secondChoice == '1':
+                print('Выберете файл')
+                selectedFile = filedialog.askopenfilename()
+                root.withdraw()
+                create_table()
+                metadata = extract_metadata(selectedFile)
+                if (isinstance(metadata, str)):
+                    print(metadata)
+                    continue
+                add_book(metadata)
+            elif secondChoice == '2':
+                create_table()
+                newBook = search_book(input('Введите название книги ') + 'книга')
+                add_book(newBook)
+
+        elif choice == '2':
+            get_books()
+        elif choice == '3':
+            cursor.execute('''DROP TABLE IF EXISTS books''')
+            print("Книги удалены!")
+        elif choice == '4':
+            break
+        elif choice == '5':
+            book_id = input('Введите ид книги: ')
+            field_name = input('Введите имя поля книги: ')
+            text = input('Введите текст : ')
+            update_field(book_id, field_name, text)
+    else:
+        print('Некорректный выбор. Попробуйте снова!')

@@ -1,6 +1,8 @@
 import customtkinter
 from customtkinter import CTk
 from PIL import ImageTk
+from main import create_table, extract_metadata, add_book
+from tkinter import filedialog
 
 window = CTk()
 #window.overrideredirect(1) убирает возможность закрыть/свернуть/ужать приложение
@@ -23,6 +25,18 @@ def show_frame(frame):
         if frame is not i:
             print(i)
             i.pack_forget()
+
+
+def click_to_add_book():
+    #из-за ряда функций, которые ждут ответа от пользователя, может уйти в бесконечную загрузку
+    print('Выберете файл')
+    selectedFile = filedialog.askopenfilename()
+    create_table()
+    metadata = extract_metadata(selectedFile)
+    if (isinstance(metadata, str)):
+        print(metadata)
+        return
+    add_book(metadata)
 
 
 def exit_app():
@@ -64,6 +78,20 @@ btnIndex.configure(font=("Verdana", 16, "bold"), width=90,
                    corner_radius=10,
                    hover_color="#F0E68C")
 btnIndex.place(x=830, y=100)
+
+
+
+btn2Index = customtkinter.CTkButton(index, text="Добавить книгу", command=click_to_add_book)
+btn2Index.configure(font=("Verdana", 16, "bold"), width=90,
+                   text_color="#99621E",
+                   fg_color="#B8860B",
+                   border_width=3,
+                   border_color="black",
+                   corner_radius=10,
+                   hover_color="#F0E68C")
+btn2Index.place(x=830, y=400)
+
+
 
 entryMyLibrary = customtkinter.CTkEntry(myLibrary, justify='center')
 entryMyLibrary.configure(font=("Verdana", 18, "bold"), width=500, height=35,
