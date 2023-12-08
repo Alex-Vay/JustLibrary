@@ -48,9 +48,18 @@ def click_to_add_book():
         return (metadata)
     add_book(metadata)
     readerTextBox.configure(state="normal")
+    readerTextBox.delete("0.0", "end")
     readerTextBox.insert("0.0", metadata['text'])
     readerTextBox.configure(state="disabled")
     show_frame(reader)
+
+
+def clear():
+    global start_index, end_index
+    clear_statistics()
+    start_index = '1.0'
+    end_index = 0
+
 
 
 def exit_app():
@@ -93,7 +102,7 @@ btnIndex.configure(font=("Verdana", 16, "bold"), width=90,
                    hover_color="#F0E68C")
 btnIndex.place(x=830, y=100)
 
-statisticsLabel = customtkinter.CTkButton(index, text=get_statistics(), command=clear_statistics)
+statisticsLabel = customtkinter.CTkButton(index, text=get_statistics(), command=clear)
 statisticsLabel.configure(font=("Verdana", 24, "bold"))
 statisticsLabel.place(x=800, y=770)
 
