@@ -5,6 +5,7 @@ from main import create_table, extract_metadata, add_book
 from tkinter import filedialog
 import sqlite3
 import io
+from statistics import start_timer, stop_timer, get_statistics, clear_statistics
 
 window = CTk()
 # window.overrideredirect(1) #убирает возможность закрыть/свернуть/ужать приложение
@@ -13,6 +14,7 @@ window.geometry("{0}x{1}+0+0".format(window.winfo_screenwidth(), window.winfo_sc
 FONTCOF = 18 / 26
 SPACECOF = 42 / 26
 TEXTSIZE = 36
+#line = round(1020 / (TEXTSIZE * (FONTCOF + SPACECOF) - FONTCOF * TEXTSIZE * 0.9))
 
 index = customtkinter.CTkFrame(window, fg_color="#99621E")
 myLibrary = customtkinter.CTkFrame(window, fg_color="#99621E")
@@ -24,10 +26,18 @@ navigation.place(x=0, y=0, relheight=1)
 search = ImageTk.PhotoImage(file="img/search.png")
 robot = ImageTk.PhotoImage(file="img/robot.png")
 logo = ImageTk.PhotoImage(file="img/logo.png")
+isReaderOpen = False
 
 
 def show_frame(frame):
+    global start_index, end_index
     for i in frames:
+        if frame is not reader:
+            #start_index = readerTextBox.index("@0,0")
+            end_index = readerTextBox.index(f"@1920,1080")
+            check_open_reader()
+        if frame is index:
+            statisticsLabel.configure(text=get_statistics())
         if frame is not i:
             i.pack_forget()
     frame.pack(expand=True, fill="both")
@@ -122,15 +132,11 @@ def display_books_on_startup():
                 new_btn.place(x=x, y=y)
 
 
-def s():
-    line = round(1020 / (TEXTSIZE * (FONTCOF + SPACECOF) - FONTCOF * TEXTSIZE * 0.9))
-    start_index = readerTextBox.index("@0,0")  # Получаем индекс начала видимой области
-    end_index = readerTextBox.index(f"@0,0 + {line}l")  # Получаем индекс конца видимой области
-    visible_text = readerTextBox.get(start_index, end_index)  # Получаем видимую часть текста
-    # visible_lines = readerTextBox.yview()
-    print(end_index)
-    print("Видимая часть текста:", visible_text)
-    window.after(5000, s)
+def clear():
+    global start_index, end_index
+    clear_statistics()
+    start_index = '1.0'
+    end_index = 0
 
 
 def exit_app():
@@ -176,6 +182,10 @@ btnIndex.configure(font=("Verdana", 16, "bold"), width=90,
                    hover_color="#F0E68C")
 btnIndex.place(x=830, y=100)
 
+statisticsLabel = customtkinter.CTkButton(index, text=get_statistics(), command=clear)
+statisticsLabel.configure(font=("Verdana", 24, "bold"))
+statisticsLabel.place(x=800, y=770)
+
 entryMyLibrary = customtkinter.CTkEntry(myLibrary, justify='center')
 entryMyLibrary.configure(font=("Verdana", 18, "bold"), width=500, height=35,
                          border_width=3,
@@ -204,7 +214,8 @@ readerTextBox = customtkinter.CTkTextbox(reader)
 readerTextBox.place(x=200, y=0)
 readerTextBox.configure(font=("Calibre", TEXTSIZE),
                         width=1720, height=1020,
-                        wrap="word")
+                        wrap="word",
+                        state="disabled")
 
 btnMain = customtkinter.CTkButton(navigation, text="Главная", command=lambda: show_frame(index))
 btnMain.configure(font=("Verdana", 32, "bold"), width=50,
@@ -213,7 +224,7 @@ btnMain.configure(font=("Verdana", 32, "bold"), width=50,
                   text_color="#B8860B",
                   border_width=3,
                   border_color="black",
-                  corner_radius=10, )
+                  corner_radius=10)
 btnMain.place(x=10, y=60)
 
 btnLibrary = customtkinter.CTkButton(navigation, text="Моя\nбиблиотека", command=lambda: show_frame(myLibrary))
@@ -256,17 +267,26 @@ btnExit.configure(font=("Verdana", 42, "bold"), width=160,
                   corner_radius=10)
 btnExit.place(x=10, y=780)
 
-show_frame(index)
+start_index = '1.0'
+end_index = 0
 
 
-def check_open_frame():
-    if reader.winfo_ismapped():
-        print("Фрейм 1 открыт")
+def check_open_reader():
+    global isReaderOpen, start_index, end_index
+    if reader.winfo_ismapped() and not isReaderOpen:
+        start_timer()
+        isReaderOpen = True
     else:
-        print("no")
-    window.after(1000, check_open_frame)
+        if not reader.winfo_ismapped() and isReaderOpen:
+            isReaderOpen = False
+            #visible_text = readerTextBox.get(start_index, end_index)
+            visible_text = readerTextBox.get(start_index, end_index)
+            start_index = end_index
+            print("-"*20)
+            stop_timer(visible_text)
+    window.after(1000, check_open_reader)
 
 
 display_books_on_startup()
-s()
+show_frame(index)
 window.mainloop()
