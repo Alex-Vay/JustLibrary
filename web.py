@@ -76,6 +76,7 @@ def click_to_add_book():
         return metadata
     add_book(metadata)
     readerTextBox.configure(state="normal")
+    readerTextBox.delete("0.0", "end")
     readerTextBox.insert("0.0", metadata['text'])
     readerTextBox.configure(state="disabled")
     show_frame(reader)
