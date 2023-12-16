@@ -22,7 +22,8 @@ def create_table():
                  series TEXT DEFAULT 'Нет данных',
                  series_index INTEGER,
                  path TEXT DEFAULT 'Нет данных',
-                 categories TEXT DEFAULT 'Нет данных'
+                 categories TEXT DEFAULT 'Нет данных',
+                 last_fragment INTEGER
                  )''')
     conn.commit()
     conn.close()
@@ -69,7 +70,7 @@ def update_books(metadata):
 def update_field(book_id, field_name, text):
     conn = sqlite3.connect('metadata.db')
     cursor = conn.cursor()
-    cursor.execute(f"UPDATE books SET {field_name} = ? WHERE id = ?", ((text, book_id)))
+    cursor.execute(f"UPDATE books SET {field_name} = {text} WHERE id = {book_id}")
     conn.commit()
 
 

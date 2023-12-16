@@ -1,7 +1,7 @@
 import customtkinter
 from PIL import ImageTk, Image
 from customtkinter import CTk
-from main import create_table, extract_metadata, add_book
+from main import create_table, extract_metadata, add_book, update_field
 from tkinter import filedialog
 import sqlite3
 import io
@@ -9,11 +9,13 @@ from statistics import start_timer, stop_timer, get_statistics, clear_statistics
 
 window = CTk()
 # window.overrideredirect(1) #убирает возможность закрыть/свернуть/ужать приложение
-window.geometry("{0}x{1}+0+0".format(window.winfo_screenwidth(), window.winfo_screenheight()))
+#window.geometry("{0}x{1}+0+0".format(window.winfo_screenwidth(), window.winfo_screenheight()))
+window.geometry("{0}x{1}+0+0".format(1920, 1080))
 
 FONTCOF = 18 / 26
 SPACECOF = 42 / 26
 TEXTSIZE = 36
+bookID = -1
 #line = round(1020 / (TEXTSIZE * (FONTCOF + SPACECOF) - FONTCOF * TEXTSIZE * 0.9))
 
 index = customtkinter.CTkFrame(window, fg_color="#99621E")
@@ -35,6 +37,9 @@ def show_frame(frame):
         if frame is not reader:
             #start_index = readerTextBox.index("@0,0")
             end_index = readerTextBox.index(f"@1920,1080")
+            try:
+                update_field(bookID[0], "last_fragment", end_index)
+            except: pass
             check_open_reader()
         if frame is index:
             statisticsLabel.configure(text=get_statistics())
@@ -69,12 +74,18 @@ def get_books_id():
 
 
 def click_to_add_book():
+    global bookID
     selectedFile = filedialog.askopenfilename()
     create_table()
     metadata = extract_metadata(selectedFile)
     if isinstance(metadata, str):
         return metadata
     add_book(metadata)
+    conn = sqlite3.connect('metadata.db')
+    cursor = conn.cursor()
+    cursor.execute(f"SELECT id FROM books WHERE path= '{metadata['path']}'")
+    result = cursor.fetchone()
+    bookID = result
     readerTextBox.configure(state="normal")
     readerTextBox.delete("0.0", "end")
     readerTextBox.insert("0.0", metadata['text'])
