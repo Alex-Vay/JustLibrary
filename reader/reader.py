@@ -9,7 +9,7 @@ import docx2txt
 
 
 encode = "utf-8"
-metadata_message = "NO METADATA"
+metadataMessage = "NO METADATA"
 
 
 class Book:
@@ -18,13 +18,13 @@ class Book:
         self.metadata = metadata
 
 
-def fb2_read(filepath):
+def fb2Read(filepath):
     metadata = ebookmeta.get_metadata(filepath)
     with open(filepath, "r", encoding=encode) as file:
         text = file.read()
-        start_main_text = text.find("body")
-        end_main_text = text.rfind("body")
-        text = (html2text.html2text(text[start_main_text + 5:end_main_text - 2]))
+        startMainText = text.find("body")
+        endMainText = text.rfind("body")
+        text = (html2text.html2text(text[startMainText + 5:endMainText - 2]))
         return Book(text, metadata)
 # разбиение по главам с помощью soup
 # def compile_chapter(section: Tag):
@@ -42,7 +42,7 @@ def fb2_read(filepath):
 # chapters = [*map(compile_chapter, soup.find_all('section'))]
 
 
-def epub_read(filepath):
+def epubRead(filepath):
     metadata = ebookmeta.get_metadata(filepath)
     book = epub.read_epub(filepath)
     text = ''
@@ -52,49 +52,50 @@ def epub_read(filepath):
     return Book(text, metadata)
 
 
-def mobi_read(filepath):
+def mobiRead(filepath):
     tempdir, filename = mobi.extract(filepath)
     with open(filename, "r", encoding=encode) as file:
         text = (html2text.html2text(file.read()))
-        return Book(text, metadata_message)
+        return Book(text, metadataMessage)
 
 
-def pdf_read(filepath):
+def pdfRead(filepath):
     reader = pypdf.PdfReader(filepath)
     text = ""
     for page in reader.pages:
         text += page.extract_text().strip()
-    return Book(text, metadata_message)
+    return Book(text, metadataMessage)
 
 
-def docx_read(filepath):
+def docxRead(filepath):
     text = docx2txt.process(filepath)
-    return Book(text, metadata_message)
+    return Book(text, metadataMessage)
 
 
-def txt_read(filepath):
+def txtRead(filepath):
     with open(filepath, "r", encoding=encode) as file:
         return Book(file.read(), "NO METADATA")
 
 
-def read_book(filepath):
+def readBook(filepath):
     path = filepath.split(".")
     match path[len(path)-1]:
         case "fb2":
-            metadata = fb2_read(filepath)
+            metadata = fb2Read(filepath)
         case "epub":
-            metadata = epub_read(filepath)
+            metadata = epubRead(filepath)
         case "mobi":
-            metadata = mobi_read(filepath)
+            metadata = mobiRead(filepath)
         case "pdf":
-            metadata = pdf_read(filepath)
+            metadata = pdfRead(filepath)
         case "docx":
-            metadata = docx_read(filepath)
+            metadata = docxRead(filepath)
         case "txt":
-            metadata = txt_read(filepath)
+            metadata = txtRead(filepath)
         case _:
             return "Я не работаю с таким форматом(("
     metadata.text = re.sub(r"(?<!\n)\n(?!\n)", " ", metadata.text)
+    metadata.text = metadata.text.replace("\n\n", "\n")
     return metadata
 
 

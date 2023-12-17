@@ -1,11 +1,26 @@
+import os
+
 import customtkinter
 from PIL import ImageTk, Image
 from customtkinter import CTk
-from main import create_table, extract_metadata, add_book, update_field
-from tkinter import filedialog
+from main import createTable, extractMetadata, addBook, updateField
+from tkinter import filedialog, colorchooser
 import sqlite3
 import io
-from statistics import start_timer, stop_timer, get_statistics, clear_statistics
+from statistics import startTimer, stopTimer, getStatistics, cleanStatistics
+
+
+def getReaderSettings():
+    try:
+        with open("readerSettings.txt", "r") as f:
+            settings = f.read().split()
+        for i in range(len(settings)):
+            try:
+                settings[i] = int(settings[i])
+            except: pass
+        return settings
+    except: return [36, 10, "#000000", "#FFFFFF"]
+
 
 window = CTk()
 # window.overrideredirect(1) #убирает возможность закрыть/свернуть/ужать приложение
@@ -14,7 +29,8 @@ window.geometry("{0}x{1}+0+0".format(1920, 1080))
 
 FONTCOF = 18 / 26
 SPACECOF = 42 / 26
-TEXTSIZE = 36
+TEXTSIZE, TEXTSPACING, TEXTCOLOR, READERCOLOR = getReaderSettings()
+CHANGEVALUE = 2
 bookID = -1
 #line = round(1020 / (TEXTSIZE * (FONTCOF + SPACECOF) - FONTCOF * TEXTSIZE * 0.9))
 
@@ -31,33 +47,32 @@ logo = ImageTk.PhotoImage(file="img/logo.png")
 isReaderOpen = False
 
 
-def show_frame(frame):
-    global start_index, end_index
+def showFrame(frame):
+    global startIndex, endIndex
     for i in frames:
         if frame is not reader:
             #start_index = readerTextBox.index("@0,0")
-            end_index = readerTextBox.index(f"@1920,1080")
-            try:
-                update_field(bookID[0], "last_fragment", end_index)
+            endIndex = readerTextBox.index(f"@1920,1080")
+            try: updateField(bookID, "last_fragment", endIndex)
             except: pass
-            check_open_reader()
+            checkOpenReader()
         if frame is index:
-            statisticsLabel.configure(text=get_statistics())
+            statisticsLabel.configure(text=getStatistics())
         if frame is not i:
             i.pack_forget()
     frame.pack(expand=True, fill="both")
 
 
-def get_cover(book_id):
+def getCover(bookId):
     conn = sqlite3.connect('metadata.db')
     cursor = conn.cursor()
-    cursor.execute("SELECT cover FROM books WHERE id=?", (book_id,))
-    cover_data = cursor.fetchone()[0]
+    cursor.execute("SELECT cover FROM books WHERE id=?", (bookId,))
+    coverData = cursor.fetchone()[0]
     conn.close()
-    return cover_data
+    return coverData
 
 
-def get_books_id():
+def getBooksId():
     conn = sqlite3.connect('metadata.db')
     cursor = conn.cursor()
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='books'")
@@ -68,98 +83,146 @@ def get_books_id():
         cursor.execute("SELECT id FROM books")
         books = cursor.fetchall()
         cursor.execute("SELECT * FROM books")
-        books_fetch = cursor.fetchall()
+        booksFetch = cursor.fetchall()
         conn.close()
-        return books_fetch, books[-1][0] if books else None
+        return booksFetch, books[-1][0] if books else None
 
 
-def click_to_add_book():
-    global bookID
-    selectedFile = filedialog.askopenfilename()
-    create_table()
-    metadata = extract_metadata(selectedFile)
-    if isinstance(metadata, str):
-        return metadata
-    add_book(metadata)
+def currentBookID(path):
     conn = sqlite3.connect('metadata.db')
     cursor = conn.cursor()
-    cursor.execute(f"SELECT id FROM books WHERE path= '{metadata['path']}'")
-    result = cursor.fetchone()
-    bookID = result
+    cursor.execute(f"SELECT id FROM books WHERE path= '{path}'")
+    return cursor.fetchone()
+
+
+def clickToAddBook():
+    global bookID
+    selectedFile = filedialog.askopenfilename()
+    createTable()
+    metadata = extractMetadata(selectedFile)
+    if isinstance(metadata, str):
+        return metadata
+    addBook(metadata)
+    bookID = currentBookID(metadata["path"])[0]
     readerTextBox.configure(state="normal")
     readerTextBox.delete("0.0", "end")
     readerTextBox.insert("0.0", metadata['text'])
     readerTextBox.configure(state="disabled")
-    show_frame(reader)
+    showFrame(reader)
 
-    books_fetch, _ = get_books_id()
+    booksFetch, _ = getBooksId()
 
-    for i, book in enumerate(books_fetch):
-        cover_data = get_cover(book[0])
-        image = Image.open(io.BytesIO(cover_data))
-        resized_image = image.resize((150, 200))
-        cover_image = ImageTk.PhotoImage(resized_image)
+    for i, book in enumerate(booksFetch):
+        coverData = getCover(book[0])
+        image = Image.open(io.BytesIO(coverData))
+        resizedImage = image.resize((150, 200))
+        coverImage = ImageTk.PhotoImage(resizedImage)
 
-        num_books_in_row = i % 5
-        x = 250 + num_books_in_row * 250
+        numBooksInRow = i % 5
+        x = 250 + numBooksInRow * 250
         y = 200 + (i // 5) * 200
 
-        new_btn = customtkinter.CTkButton(myLibrary, image=cover_image,
+        newBtn = customtkinter.CTkButton(myLibrary, image=coverImage,
                                           text="",
                                           fg_color="#99621E",
                                           hover_color="#F0E68C",
                                           border_width=3,
                                           border_color="black",
                                           corner_radius=10)
-        new_btn.place(x=x, y=y)
+        newBtn.place(x=x, y=y)
 
 
-def display_books_on_startup():
-    create_table()
-    books_fetch, latest_book_id = get_books_id()
+def displayBooksOnStartup():
+    createTable()
+    booksFetch, latestBookId = getBooksId()
 
-    if not books_fetch:
+    if not booksFetch:
         print("No books added yet")
-        show_frame(index)
+        showFrame(index)
     else:
-        for i, book in enumerate(books_fetch):
-            cover_data = get_cover(book[0])
-            if cover_data:
-                image = Image.open(io.BytesIO(cover_data))
-                resized_image = image.resize((150, 200))
-                cover_image = ImageTk.PhotoImage(resized_image)
+        for i, book in enumerate(booksFetch):
+            coverData = getCover(book[0])
+            if coverData:
+                image = Image.open(io.BytesIO(coverData))
+                resizedImage = image.resize((150, 200))
+                coverImage = ImageTk.PhotoImage(resizedImage)
 
-                num_books_in_row = i % 5
-                x = 250 + num_books_in_row * 250
+                numBooksInRow = i % 5
+                x = 250 + numBooksInRow * 250
                 y = 200 + (i // 5) * 200
 
-                new_btn = customtkinter.CTkButton(myLibrary, image=cover_image,
+                newBtn = customtkinter.CTkButton(myLibrary, image=coverImage,
                                                   text="",
                                                   fg_color="#99621E",
                                                   hover_color="#F0E68C",
                                                   border_width=3,
                                                   border_color="black",
                                                   corner_radius=10)
-                new_btn.image = cover_image
-                new_btn.place(x=x, y=y)
+                newBtn.image = coverImage
+                newBtn.place(x=x, y=y)
 
 
-def clear():
-    global start_index, end_index
-    clear_statistics()
-    start_index = '1.0'
-    end_index = 0
+def checkSize(size, num):
+    return True if (size + num >= 0) else False
 
 
-def exit_app():
+def changeFont(num):
+    global TEXTSIZE
+    if not(checkSize(TEXTSIZE, num)): return
+    TEXTSIZE += num
+    readerTextBox.configure(font=("Calibre", TEXTSIZE))
+
+
+def changeTextSpacing(num):
+    global TEXTSPACING
+    if not (checkSize(TEXTSPACING, num)): return
+    TEXTSPACING += num
+    readerTextBox.configure(spacing3=TEXTSPACING)
+
+
+def saveReaderSettings():
+    with open("readerSettings.txt", "w") as f:
+        f.write(f"{TEXTSIZE} {TEXTSPACING} {TEXTCOLOR} {READERCOLOR}")
+
+
+def changeColor(item):
+    global TEXTCOLOR, READERCOLOR
+    color = colorchooser.askcolor()[1]
+    match(item):
+        case "text":
+            TEXTCOLOR = color
+            readerTextBox.configure(text_color=TEXTCOLOR)
+        case "reader":
+            READERCOLOR = color
+            readerTextBox.configure(fg_color=READERCOLOR)
+
+
+def clean():
+    global startIndex, endIndex
+    cleanStatistics()
+    startIndex = '1.0'
+    endIndex = 0
+
+def cleanReaderSettings():
+    try:
+        os.remove("readerSettings.txt")
+    except:
+        pass
+    TEXTSIZE, TEXTSPACING, TEXTCOLOR, READERCOLOR = getReaderSettings()
+    readerTextBox.configure(font=("Calibre", TEXTSIZE), text_color=TEXTCOLOR,
+                            fg_color=READERCOLOR, spacing3=TEXTSPACING)
+
+
+def exitApp():
+    saveReaderSettings()
     window.quit()
 
 
-def clear_entryVirtualAssistant(event):
+def clearEntryVirtualAssistant(event):
     entryVirtualAssistant.delete(0, customtkinter.END)
 
 
-def clear_entryMyLibrary(event):
+def clearEntryMyLibrary(event):
     entryMyLibrary.delete(0, customtkinter.END)
 
 
@@ -181,7 +244,7 @@ entryVirtualAssistant.configure(font=("Verdana", 22, "bold"), width=420, height=
                                 border_color="black",
                                 fg_color="#B8860B")
 entryVirtualAssistant.insert(5, "Введите запрос...")
-entryVirtualAssistant.bind("<Button-1>", clear_entryVirtualAssistant)
+entryVirtualAssistant.bind("<Button-1>", clearEntryVirtualAssistant)
 entryVirtualAssistant.place(x=400, y=100)
 
 btnIndex = customtkinter.CTkButton(index, text="Виртуальный\n помощник", compound="right", image=robot)
@@ -194,7 +257,7 @@ btnIndex.configure(font=("Verdana", 16, "bold"), width=90,
                    hover_color="#F0E68C")
 btnIndex.place(x=830, y=100)
 
-statisticsLabel = customtkinter.CTkButton(index, text=get_statistics(), command=clear)
+statisticsLabel = customtkinter.CTkButton(index, text=getStatistics(), command=clean)
 statisticsLabel.configure(font=("Verdana", 24, "bold"))
 statisticsLabel.place(x=800, y=770)
 
@@ -205,7 +268,7 @@ entryMyLibrary.configure(font=("Verdana", 18, "bold"), width=500, height=35,
                          border_color="black",
                          fg_color="#B8860B")
 entryMyLibrary.insert(5, "Искать здесь...")
-entryMyLibrary.bind("<Button-1>", clear_entryMyLibrary)
+entryMyLibrary.bind("<Button-1>", clearEntryMyLibrary)
 entryMyLibrary.place(x=470, y=100)
 
 btnMyLibrary = customtkinter.CTkButton(myLibrary, text="Искать", image=search, compound="left")
@@ -223,13 +286,42 @@ labelMyLibrary.configure(font=("Verdana", 64, "bold"))
 labelMyLibrary.place(x=480, y=10)
 
 readerTextBox = customtkinter.CTkTextbox(reader)
-readerTextBox.place(x=200, y=0)
+readerTextBox.place(x=200, y=50)
 readerTextBox.configure(font=("Calibre", TEXTSIZE),
-                        width=1720, height=1020,
-                        wrap="word",
-                        state="disabled")
+                        width=1720, height=960,
+                        wrap="word", state="disabled",
+                        spacing3=TEXTSPACING,
+                        text_color=TEXTCOLOR, fg_color=READERCOLOR)
 
-btnMain = customtkinter.CTkButton(navigation, text="Главная", command=lambda: show_frame(index))
+readerFontIncrease = customtkinter.CTkButton(reader, text="Тт+", command=lambda: changeFont(CHANGEVALUE))
+readerFontIncrease.place(x=200, y=0)
+readerFontIncrease.configure(font=("Calibre", 24), width=45)
+
+readerFontReduce = customtkinter.CTkButton(reader, text="Тт-", command=lambda: changeFont(-CHANGEVALUE))
+readerFontReduce.place(x=260, y=0)
+readerFontReduce.configure(font=("Calibre", 24), width=45)
+
+readerSpaceIncrease = customtkinter.CTkButton(reader, text="A+", command=lambda: changeTextSpacing(CHANGEVALUE))
+readerSpaceIncrease.place(x=320, y=0)
+readerSpaceIncrease.configure(font=("Calibre", 24), width=45)
+
+readerSpaceReduce = customtkinter.CTkButton(reader, text="A-", command=lambda: changeTextSpacing(-CHANGEVALUE))
+readerSpaceReduce.place(x=380, y=0)
+readerSpaceReduce.configure(font=("Calibre", 24), width=45)
+
+readerTextColor = customtkinter.CTkButton(reader, text="Цвет текста", command=lambda: changeColor("text"))
+readerTextColor.place(x=440, y=0)
+readerTextColor.configure(font=("Calibre", 24), width=140)
+
+readerReaderColor = customtkinter.CTkButton(reader, text="Цвет фона", command=lambda: changeColor("reader"))
+readerReaderColor.place(x=600, y=0)
+readerReaderColor.configure(font=("Calibre", 24), width=100)
+
+readerReaderClean = customtkinter.CTkButton(reader, text="Очистить настройки", command=cleanReaderSettings)
+readerReaderClean.place(x=1600, y=0)
+readerReaderClean.configure(font=("Calibre", 24), width=100)
+
+btnMain = customtkinter.CTkButton(navigation, text="Главная", command=lambda: showFrame(index))
 btnMain.configure(font=("Verdana", 32, "bold"), width=50,
                   fg_color="#99621E",
                   hover_color="#F0E68C",
@@ -239,7 +331,7 @@ btnMain.configure(font=("Verdana", 32, "bold"), width=50,
                   corner_radius=10)
 btnMain.place(x=10, y=60)
 
-btnLibrary = customtkinter.CTkButton(navigation, text="Моя\nбиблиотека", command=lambda: show_frame(myLibrary))
+btnLibrary = customtkinter.CTkButton(navigation, text="Моя\nбиблиотека", command=lambda: showFrame(myLibrary))
 btnLibrary.configure(font=("Verdana", 22, "bold"), width=30,
                      fg_color="#99621E",
                      hover_color="#F0E68C",
@@ -249,7 +341,7 @@ btnLibrary.configure(font=("Verdana", 22, "bold"), width=30,
                      corner_radius=10)
 btnLibrary.place(x=10, y=150)
 
-btnReader = customtkinter.CTkButton(navigation, text="Читалка", command=lambda: show_frame(reader))
+btnReader = customtkinter.CTkButton(navigation, text="Читалка", command=lambda: showFrame(reader))
 btnReader.configure(font=("Verdana", 32, "bold"), width=170, height=60,
                     fg_color="#99621E",
                     hover_color="#F0E68C",
@@ -259,7 +351,7 @@ btnReader.configure(font=("Verdana", 32, "bold"), width=170, height=60,
                     corner_radius=10)
 btnReader.place(x=10, y=240)
 
-btnAddBook = customtkinter.CTkButton(navigation, text="Добавить\nкнигу", command=click_to_add_book)
+btnAddBook = customtkinter.CTkButton(navigation, text="Добавить\nкнигу", command=clickToAddBook)
 btnAddBook.configure(font=("Verdana", 22, "bold"), width=170,
                      fg_color="#99621E",
                      hover_color="#F0E68C",
@@ -269,7 +361,7 @@ btnAddBook.configure(font=("Verdana", 22, "bold"), width=170,
                      corner_radius=10)
 btnAddBook.place(x=10, y=330)
 
-btnExit = customtkinter.CTkButton(navigation, text="Выйти", command=exit_app)
+btnExit = customtkinter.CTkButton(navigation, text="Выйти", command=exitApp)
 btnExit.configure(font=("Verdana", 42, "bold"), width=160,
                   fg_color="#FF7F50",
                   hover_color="#FF4500",
@@ -279,26 +371,26 @@ btnExit.configure(font=("Verdana", 42, "bold"), width=160,
                   corner_radius=10)
 btnExit.place(x=10, y=780)
 
-start_index = '1.0'
-end_index = 0
+startIndex = '1.0'
+endIndex = 0
 
 
-def check_open_reader():
-    global isReaderOpen, start_index, end_index
+def checkOpenReader():
+    global isReaderOpen, startIndex, endIndex
     if reader.winfo_ismapped() and not isReaderOpen:
-        start_timer()
+        startTimer()
         isReaderOpen = True
     else:
         if not reader.winfo_ismapped() and isReaderOpen:
             isReaderOpen = False
             #visible_text = readerTextBox.get(start_index, end_index)
-            visible_text = readerTextBox.get(start_index, end_index)
-            start_index = end_index
+            visible_text = readerTextBox.get(startIndex, endIndex)
+            startIndex = endIndex
             print("-"*20)
-            stop_timer(visible_text)
-    window.after(1000, check_open_reader)
+            stopTimer(visible_text)
+    window.after(1000, checkOpenReader)
 
 
-display_books_on_startup()
-show_frame(index)
+displayBooksOnStartup()
+showFrame(index)
 window.mainloop()

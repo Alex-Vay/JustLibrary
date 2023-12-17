@@ -1,9 +1,9 @@
 import sqlite3
 from tkinter import Tk, filedialog
 import requests
-from reader.reader import read_book
+from reader.reader import readBook
 
-def create_table():
+def createTable():
     conn = sqlite3.connect('metadata.db')
     cursor = conn.cursor()
 
@@ -28,7 +28,7 @@ def create_table():
     conn.commit()
     conn.close()
 
-def get_book(book, cursor):
+def getBook(book, cursor):
     cursor.execute(f"SELECT * FROM books WHERE id= '{book}'")
     metadata = cursor.fetchone()
     conn.close()
@@ -36,7 +36,7 @@ def get_book(book, cursor):
 
 
 
-def get_books():
+def getBooks():
     conn = sqlite3.connect('metadata.db')
     cursor = conn.cursor()
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='books'")
@@ -55,7 +55,7 @@ def get_books():
         return books_fetch
 
 
-def update_books(metadata):
+def updateBooks(metadata):
     conn = sqlite3.connect('metadata.db')
     cursor = conn.cursor()
     cursor.execute("UPDATE books SET title=?, author=?, publisher=?, description=?, subject=?, date_book=?, language_book=?, " +
@@ -67,14 +67,14 @@ def update_books(metadata):
     conn.commit()
     conn.close()
 
-def update_field(book_id, field_name, text):
+def updateField(book_id, field_name, text):
     conn = sqlite3.connect('metadata.db')
     cursor = conn.cursor()
     cursor.execute(f"UPDATE books SET {field_name} = {text} WHERE id = {book_id}")
     conn.commit()
 
 
-def add_book(metadata):
+def addBook(metadata):
     conn = sqlite3.connect('metadata.db')
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM books WHERE path=?", (metadata['path'],))
@@ -92,7 +92,7 @@ def add_book(metadata):
     print("Книга добавлена!")
 
 
-def search_book(query):
+def searchBook(query):
     url = 'https://www.googleapis.com/books/v1/volumes'
     params = {'q': query}
 
@@ -129,8 +129,8 @@ def search_book(query):
         return None
 
 
-def extract_metadata(file):
-    book = read_book(file)
+def extractMetadata(file):
+    book = readBook(file)
     try:
         text = book.text
         meta = book.metadata
@@ -181,19 +181,19 @@ if __name__ == "__main__":
                 print('Выберете файл')
                 selectedFile = filedialog.askopenfilename()
                 root.withdraw()
-                create_table()
-                metadata = extract_metadata(selectedFile)
+                createTable()
+                metadata = extractMetadata(selectedFile)
                 if (isinstance(metadata, str)):
                     print(metadata)
                     continue
-                add_book(metadata)
+                addBook(metadata)
             elif secondChoice == '2':
-                create_table()
-                newBook = search_book(input('Введите название книги ') + 'книга')
-                add_book(newBook)
+                createTable()
+                newBook = searchBook(input('Введите название книги ') + 'книга')
+                addBook(newBook)
 
         elif choice == '2':
-            get_books()
+            getBooks()
         elif choice == '3':
             cursor.execute('''DROP TABLE IF EXISTS books''')
             print("Книги удалены!")
@@ -203,6 +203,6 @@ if __name__ == "__main__":
             book_id = input('Введите ид книги: ')
             field_name = input('Введите имя поля книги: ')
             text = input('Введите текст : ')
-            update_field(book_id, field_name, text)
+            updateField(book_id, field_name, text)
     else:
         print('Некорректный выбор. Попробуйте снова!')
