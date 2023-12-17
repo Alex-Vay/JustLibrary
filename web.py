@@ -1,5 +1,4 @@
 import os
-
 import customtkinter
 from PIL import ImageTk, Image
 from customtkinter import CTk
@@ -31,7 +30,7 @@ FONTCOF = 18 / 26
 SPACECOF = 42 / 26
 TEXTSIZE, TEXTSPACING, TEXTCOLOR, READERCOLOR = getReaderSettings()
 CHANGEVALUE = 2
-bookID = -1
+bookPath = ''
 #line = round(1020 / (TEXTSIZE * (FONTCOF + SPACECOF) - FONTCOF * TEXTSIZE * 0.9))
 
 index = customtkinter.CTkFrame(window, fg_color="#99621E")
@@ -48,12 +47,12 @@ isReaderOpen = False
 
 
 def showFrame(frame):
-    global startIndex, endIndex
+    global startIndex, endIndex, bookPath
     for i in frames:
         if frame is not reader:
             #start_index = readerTextBox.index("@0,0")
             endIndex = readerTextBox.index(f"@1920,1080")
-            try: updateField(bookID, "last_fragment", endIndex)
+            try: updateField(bookPath, "last_fragment", endIndex)
             except: pass
             checkOpenReader()
         if frame is index:
@@ -88,25 +87,26 @@ def getBooksId():
         return booksFetch, books[-1][0] if books else None
 
 
-def currentBookID(path):
+def currentBookLastFragment(path):
     conn = sqlite3.connect('metadata.db')
     cursor = conn.cursor()
-    cursor.execute(f"SELECT id FROM books WHERE path= '{path}'")
-    return cursor.fetchone()
+    cursor.execute(f"SELECT last_fragment FROM books WHERE path= '{path}'")
+    return cursor.fetchone()[0]
 
 
 def clickToAddBook():
-    global bookID
+    global bookPath
     selectedFile = filedialog.askopenfilename()
     createTable()
     metadata = extractMetadata(selectedFile)
     if isinstance(metadata, str):
         return metadata
     addBook(metadata)
-    bookID = currentBookID(metadata["path"])[0]
+    bookPath = metadata["path"]
     readerTextBox.configure(state="normal")
     readerTextBox.delete("0.0", "end")
     readerTextBox.insert("0.0", metadata['text'])
+    readerTextBox.see(currentBookLastFragment(bookPath))
     readerTextBox.configure(state="disabled")
     showFrame(reader)
 

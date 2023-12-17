@@ -23,7 +23,7 @@ def createTable():
                  series_index INTEGER,
                  path TEXT DEFAULT 'Нет данных',
                  categories TEXT DEFAULT 'Нет данных',
-                 last_fragment INTEGER
+                 last_fragment FLOAT DEFAULT '0.0'
                  )''')
     conn.commit()
     conn.close()
@@ -47,12 +47,12 @@ def getBooks():
         cursor.execute("SELECT id FROM books")
         books = cursor.fetchall()
         cursor.execute("SELECT * FROM books")
-        books_fetch = cursor.fetchall()
+        booksFetch = cursor.fetchall()
         # для получения одной книги
         # for i in books: #list(map(lambda x: str(x).strip("(),"), books)):
         #     print(get_book(i[0], cursor))
         conn.close()
-        return books_fetch
+        return booksFetch
 
 
 def updateBooks(metadata):
@@ -67,10 +67,10 @@ def updateBooks(metadata):
     conn.commit()
     conn.close()
 
-def updateField(book_id, field_name, text):
+def updateField(bookPath, fieldName, text):
     conn = sqlite3.connect('metadata.db')
     cursor = conn.cursor()
-    cursor.execute(f"UPDATE books SET {field_name} = {text} WHERE id = {book_id}")
+    cursor.execute(f"UPDATE books SET {fieldName}={text} WHERE path='{bookPath}'")
     conn.commit()
 
 
