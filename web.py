@@ -2,7 +2,7 @@ import os
 import customtkinter
 from PIL import ImageTk, Image
 from customtkinter import CTk
-from main import createTable, extractMetadata, addBook, updateField
+from main import createTable, extractMetadata, addBook, updateField, filterBooks
 from tkinter import filedialog, colorchooser
 import sqlite3
 import io
@@ -42,6 +42,7 @@ navigation.place(x=0, y=0, relheight=1)
 search = ImageTk.PhotoImage(file="img/search.png")
 robot = ImageTk.PhotoImage(file="img/robot.png")
 logo = ImageTk.PhotoImage(file="img/logo.png")
+delete = ImageTk.PhotoImage(file="img/delete.jpg")
 isReaderOpen = False
 
 
@@ -81,7 +82,9 @@ def openBookText(bookId):
     readerTextBox.configure(state="disabled")
     showFrame(reader)
 
-def getBooksId():
+
+
+def getBooksId(arguments = None):
     conn = sqlite3.connect('metadata.db')
     cursor = conn.cursor()
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='books'")
@@ -89,12 +92,16 @@ def getBooksId():
     if result is None:
         print("Книги еще не добавлены!")
     else:
-        cursor.execute("SELECT id FROM books")
-        books = cursor.fetchall()
-        cursor.execute("SELECT * FROM books")
-        booksFetch = cursor.fetchall()
-        conn.close()
-        return booksFetch, books[-1][0] if books else None
+        if (arguments is None):
+            cursor.execute("SELECT id FROM books")
+            books = cursor.fetchall()
+            cursor.execute("SELECT * FROM books")
+            booksFetch = cursor.fetchall()
+            conn.close()
+            return booksFetch, books[-1][0] if books else None
+        else:
+            booksFetch, books = filterBooks(arguments)
+            return booksFetch, books if books else None
 
 
 def currentBookLastFragment(path):
@@ -106,6 +113,7 @@ def currentBookLastFragment(path):
 
 def clickToAddBook():
     global bookPath
+    myLibrary.nothingWasFound.destroy()
     selectedFile = filedialog.askopenfilename()
     createTable()
     metadata = extractMetadata(selectedFile)
@@ -120,6 +128,12 @@ def clickToAddBook():
     readerTextBox.configure(state="disabled")
     showFrame(reader)
 
+    booksFetch, _ = getBooksId()
+    for i, book in enumerate(booksFetch):
+        bookPath = booksFetch[i][13]
+        coverData = getCover(book[0])
+        print(bookPath)
+        createBoxForBook(i, coverData, bookPath)
     displayBooksOnStartup()
 
 def getCover(bookId):
@@ -194,6 +208,65 @@ def displayBooksOnStartup():
                                                border_color="black",
                                                corner_radius=10, command=lambda book_id=book[0]: openBookText(book_id))
             newBtn1.place(x=x1, y=y1)
+
+def createBoxForBook(i, coverData, bookPath):
+    image = Image.open(io.BytesIO(coverData))
+    resizedImage = image.resize((150, 200))
+    coverImage = ImageTk.PhotoImage(resizedImage)
+    numBooksInRow = i % 5
+    x = 250 + numBooksInRow * 250
+    y = 200 + (i // 5) * 200
+    newBtn = customtkinter.CTkButton(myLibrary, image=coverImage,
+                                     text="",
+                                     fg_color="#99621E",
+                                     hover_color="#F0E68C",
+                                     border_width=3,
+                                     border_color="black",
+                                     corner_radius=10,
+                                     command=lambda: addCategoryForBook(bookPath))
+    newBtn.place(x=x, y=y)
+
+
+def addCategoryForBook(bookPath):
+    query = entryMyLibrary.get()
+    updateField(bookPath, 'categories', query)
+
+
+def displayBooks(query = None):
+    createNothingWasFound()
+    createTable()
+    booksFetch, latestBookId = getBooksId(query)
+    if not booksFetch:
+        print("No books added yet")
+    else:
+
+        myLibrary.nothingWasFound.destroy()
+        for i, book in enumerate(booksFetch):
+            bookPath = booksFetch[i][13]
+            coverData = getCover(book[0])
+            if coverData:
+                createBoxForBook(i, coverData, bookPath)
+
+
+def ClickToFindBooks():
+    clearAllWidgetsBooks()
+    myLibrary.nothingWasFound.destroy()
+    query = entryMyLibrary.get()
+    displayBooks(query)
+
+def clearAllWidgetsBooks():
+    for book in myLibrary.winfo_children():
+        if isinstance(book, customtkinter.CTkButton) and book != myLibrary.btnMyLibrary and book != myLibrary.btnDelete:
+            book.destroy()
+
+
+def deleteBooks():
+    conn = sqlite3.connect('metadata.db')
+    cursor = conn.cursor()
+    cursor.execute('''DROP TABLE IF EXISTS books''')
+    conn.close()
+    clearAllWidgetsBooks()
+    createNothingWasFound()
 
 
 def checkSize(size, num):
@@ -342,11 +415,14 @@ entryMyLibrary.configure(font=("Verdana", 18, "bold"), width=500, height=35,
                          corner_radius=10,
                          border_color="black",
                          fg_color="#B8860B")
-entryMyLibrary.insert(5, "Искать здесь...")
+
+entryMyLibrary.insert(5, "Введите")
 entryMyLibrary.bind("<Button-1>", clearEntryMyLibrary)
 entryMyLibrary.place(x=470, y=100)
 
-btnMyLibrary = customtkinter.CTkButton(myLibrary, text="Искать", image=search, compound="left")
+
+btnMyLibrary = customtkinter.CTkButton(myLibrary, text="Искать", command=ClickToFindBooks, image=search, compound="left")
+myLibrary.btnMyLibrary = btnMyLibrary
 btnMyLibrary.configure(font=("Verdana", 16, "bold"), width=90, height=35,
                        text_color="#99621E",
                        fg_color="#B8860B",
@@ -356,9 +432,27 @@ btnMyLibrary.configure(font=("Verdana", 16, "bold"), width=90, height=35,
                        hover_color="#F0E68C")
 btnMyLibrary.place(x=980, y=100)
 
+btnDelete = customtkinter.CTkButton(myLibrary, text="Удалить книги", command=deleteBooks)
+myLibrary.btnDelete = btnDelete
+btnDelete.configure(font=("Verdana", 16, "bold"), width=90, height=35,
+                       text_color="#99621E",
+                       fg_color="#B8860B",
+                       border_width=3,
+                       border_color="black",
+                       corner_radius=10,
+                       hover_color="#F0E68C")
+btnDelete.place(x=1115, y=100)
+
+
 labelMyLibrary = customtkinter.CTkLabel(myLibrary, text="Моя библиотека", text_color="#BDB76B")
 labelMyLibrary.configure(font=("Verdana", 64, "bold"))
 labelMyLibrary.place(x=480, y=10)
+
+def createNothingWasFound():
+    nothingWasFound = customtkinter.CTkLabel(myLibrary, text="Ничего не найдено", text_color="#BDB76B")
+    myLibrary.nothingWasFound = nothingWasFound
+    nothingWasFound.configure(font=("Verdana", 40, "bold"))
+    nothingWasFound.place(x=600, y=350)
 
 readerTextBox = customtkinter.CTkTextbox(reader)
 readerTextBox.place(x=200, y=50)
@@ -476,6 +570,8 @@ def checkOpenReader():
     window.after(1000, checkOpenReader)
 
 
+
+displayBooks()
 displayBooksOnStartup()
 showFrame(index)
 window.mainloop()

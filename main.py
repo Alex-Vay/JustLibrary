@@ -28,6 +28,25 @@ def createTable():
     conn.commit()
     conn.close()
 
+def filterBooks(arguments):
+    conn = sqlite3.connect('metadata.db')
+    cursor = conn.cursor()
+
+    firstQuery = "SELECT id FROM books WHERE "
+    secondQuery = "SELECT * FROM books WHERE "
+    conditions = []
+    columns = ['id', 'title', 'author', 'publisher', 'date_book', 'format', 'categories']
+    for column in columns:
+        conditions.append(f"{column} LIKE '%{arguments}%'")
+    firstQuery += " OR ".join(conditions)
+    secondQuery += " OR ".join(conditions)
+    cursor.execute(firstQuery)
+    books = cursor.fetchall()
+    cursor.execute(secondQuery)
+    books_fetch = cursor.fetchall()
+    return books_fetch, books[-1][0] if books else None
+
+
 def getBook(book, cursor):
     cursor.execute(f"SELECT * FROM books WHERE id= '{book}'")
     metadata = cursor.fetchone()
@@ -70,7 +89,8 @@ def updateBooks(metadata):
 def updateField(bookPath, fieldName, text):
     conn = sqlite3.connect('metadata.db')
     cursor = conn.cursor()
-    cursor.execute(f"UPDATE books SET {fieldName}={text} WHERE path='{bookPath}'")
+    query = f"UPDATE books SET {fieldName}=? WHERE path=?"
+    cursor.execute(query, (text, bookPath))
     conn.commit()
 
 
