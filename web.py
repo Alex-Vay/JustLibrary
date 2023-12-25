@@ -1,4 +1,5 @@
 import os
+import threading
 import customtkinter
 from PIL import ImageTk, Image
 from customtkinter import CTk
@@ -7,6 +8,7 @@ from tkinter import filedialog, colorchooser
 import sqlite3
 import io
 from statistics import startTimer, stopTimer, getStatistics, cleanStatistics
+from virtual_assistant.chatgpt_functions import getResponse2
 
 
 def getReaderSettings():
@@ -30,7 +32,7 @@ SPACECOF = 42 / 26
 TEXTSIZE, TEXTSPACING, TEXTCOLOR, READERCOLOR = getReaderSettings()
 CHANGEVALUE = 2
 bookPath = ''
-#line = round(1020 / (TEXTSIZE * (FONTCOF + SPACECOF) - FONTCOF * TEXTSIZE * 0.9))
+libraryOptions = ["Удалить книгу", "Найти похожие", "Информация", "Изменить поля"]
 
 index = customtkinter.CTkFrame(window, fg_color="#99621E")
 myLibrary = customtkinter.CTkFrame(window, fg_color="#99621E")
@@ -50,7 +52,6 @@ def showFrame(frame):
     global startIndex, endIndex, bookPath
     for i in frames:
         if frame is not reader:
-            #start_index = readerTextBox.index("@0,0")
             endIndex = readerTextBox.index(f"@1920,1080")
             try: updateField(bookPath, "last_fragment", endIndex)
             except: pass
@@ -60,9 +61,6 @@ def showFrame(frame):
         if frame is not i:
             i.pack_forget()
     frame.pack(expand=True, fill="both")
-
-
-
 
 
 def getBookText(bookId):
@@ -75,22 +73,26 @@ def getBookText(bookId):
 
 
 def openBookText(bookId):
+    global bookPath
     book_text = getBookText(bookId)
     readerTextBox.configure(state="normal")
     readerTextBox.delete("0.0", "end")
     readerTextBox.insert("0.0", book_text)
+    conn = sqlite3.connect('metadata.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT path FROM books WHERE id=?", (bookId,))
+    bookPath = cursor.fetchone()[0]
+    readerTextBox.see(currentBookLastFragment(bookPath))
     readerTextBox.configure(state="disabled")
     showFrame(reader)
 
 
-
-def getBooksId(arguments = None):
+def getBooksId(arguments=None):
     conn = sqlite3.connect('metadata.db')
     cursor = conn.cursor()
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='books'")
     result = cursor.fetchone()
-    if result is None:
-        print("Книги еще не добавлены!")
+    if result is None: return
     else:
         if (arguments is None):
             cursor.execute("SELECT id FROM books")
@@ -127,14 +129,14 @@ def clickToAddBook():
     readerTextBox.see(currentBookLastFragment(bookPath))
     readerTextBox.configure(state="disabled")
     showFrame(reader)
-
-    booksFetch, _ = getBooksId()
-    for i, book in enumerate(booksFetch):
-        bookPath = booksFetch[i][13]
-        coverData = getCover(book[0])
-        print(bookPath)
-        createBoxForBook(i, coverData, bookPath)
-    displayBooksOnStartup()
+    displayBooks()
+    # booksFetch, _ = getBooksId()
+    # for i, book in enumerate(booksFetch):
+    #     bookPath = booksFetch[i][13]
+    #     coverData = getCover(book[0])
+    #     print(bookPath)
+    #     createBoxForBook(i, coverData, bookPath)
+    # displayBooksOnStartup()
 
 def getCover(bookId):
     conn = sqlite3.connect('metadata.db')
@@ -142,25 +144,24 @@ def getCover(bookId):
     cursor.execute("SELECT cover FROM books WHERE id=?", (bookId,))
     cover_data = cursor.fetchone()
     conn.close()
-
     if cover_data is not None:
-        return cover_data[0]  # Return the cover data if it's not None
+        return cover_data[0]
     else:
         return None
 
-def getNextBook():
-    conn = sqlite3.connect('metadata.db')
-    cursor = conn.cursor()
-    cursor.execute("SELECT id FROM books ORDER BY id DESC LIMIT 1")
-    latestBookId = cursor.fetchone()
-    conn.close()
-
-    if latestBookId:
-        nextBookId = latestBookId[0] + 1
-    else:
-        nextBookId = 1  # If no books exist, start from ID 1
-
-    return nextBookId
+# def getNextBook():
+#     conn = sqlite3.connect('metadata.db')
+#     cursor = conn.cursor()
+#     cursor.execute("SELECT id FROM books ORDER BY id DESC LIMIT 1")
+#     latestBookId = cursor.fetchone()
+#     conn.close()
+#
+#     if latestBookId:
+#         nextBookId = latestBookId[0] + 1
+#     else:
+#         nextBookId = 1  # If no books exist, start from ID 1
+#
+#     return nextBookId
 
 
 def displayBooksOnStartup():
@@ -209,6 +210,44 @@ def displayBooksOnStartup():
                                                corner_radius=10, command=lambda book_id=book[0]: openBookText(book_id))
             newBtn1.place(x=x1, y=y1)
 
+# def option_changed(eventObject):
+#     selected_option = menu.get()
+#     print(f"Selected option: {selected_option}")
+
+
+options = ["", "Опция 2", "Опция 3"]
+opt = customtkinter.StringVar(window)
+opt.set(options[0])
+str_out = customtkinter.StringVar(window)
+str_out.set("out")
+
+def show_menu():
+
+    menu = customtkinter.CTkOptionMenu(window, variable=opt, values=options)
+    opt.trace('w', my_show)
+    menu.place(x=200, y=300)
+    lab = customtkinter.CTkLabel(window, textvariable=str_out)
+    lab.place(x=400, y=400)
+
+def my_show(*args):
+    str_out.set(opt.get())
+
+def aff():
+    print(str_out.get())
+    #print(opt.get())
+    window.after(1000, aff)
+
+def aff2():
+    try:
+        text = readerTextBox.get("sel.first", "sel.last")
+        children = myLibrary.winfo_children()
+
+        buttons = [child for child in children if isinstance(child, customtkinter.CTkButton)]
+        print(text, len(buttons), buttons)
+    except: pass
+    window.after(1000, aff2)
+
+
 def createBoxForBook(i, coverData, bookPath):
     image = Image.open(io.BytesIO(coverData))
     resizedImage = image.resize((150, 200))
@@ -223,8 +262,14 @@ def createBoxForBook(i, coverData, bookPath):
                                      border_width=3,
                                      border_color="black",
                                      corner_radius=10,
-                                     command=lambda: addCategoryForBook(bookPath))
+                                     command=show_menu)
+    # sel = ''
+    # optionsMenu = customtkinter.CTkOptionMenu(newBtn, sel, *libraryOptions)
+    options = ["", "Опция 2", "Опция 3"]
+    # option_menu = customtkinter.CTkOptionMenu(newBtn, width=100, height=100, values=options)
+    # option_menu.place(x=x, y=y)
     newBtn.place(x=x, y=y)
+
 
 
 def addCategoryForBook(bookPath):
@@ -373,6 +418,34 @@ def click_to_toggle_mode():
         entryMyLibrary.configure(font=("Verdana", 18, "bold"), width=500, height=35,border_width=3,corner_radius=10,border_color="black",fg_color="#B8860B")
 
 
+def startAnswer():
+    thread = threading.Thread(target=completeAnswer)
+    thread.start()
+
+
+def completeAnswer():
+    message = entryVirtualAssistant.get()
+    response = getResponse2(message)
+    additional_frame = customtkinter.CTkToplevel(window)
+    additional_frame.geometry("700x400+600+300")
+    textBox = customtkinter.CTkTextbox(additional_frame)
+    textBox.configure(font=("Calibre", TEXTSIZE),
+                      width=700, height=400,
+                      wrap="word", state="normal",
+                      spacing3=TEXTSPACING,
+                      text_color=TEXTCOLOR, fg_color=READERCOLOR)
+    textBox.insert('0.0', response)
+    textBox.configure(state="disabled")
+    textBox.place(x=0, y=0)
+    additional_frame.grab_set()
+
+
+def createNothingWasFound():
+    nothingWasFound = customtkinter.CTkLabel(myLibrary, text="Ничего не найдено", text_color="#BDB76B")
+    myLibrary.nothingWasFound = nothingWasFound
+    nothingWasFound.configure(font=("Verdana", 40, "bold"))
+    nothingWasFound.place(x=600, y=350)
+
 
 labelIndex = customtkinter.CTkLabel(index, text="Главная", text_color="#BDB76B")
 labelIndex.configure(font=("Verdana", 64, "bold"))
@@ -381,7 +454,7 @@ labelIndex.place(x=600, y=10)
 labelLogo = customtkinter.CTkLabel(index, image=logo, text="")
 labelLogo.place(x=1300, y=10)
 
-recentlyOpened = customtkinter.CTkLabel(index, text="Недавно открытые:", text_color="#BDB76B")
+recentlyOpened = customtkinter.CTkLabel(index, text="Недавно добавленные:", text_color="#BDB76B")
 recentlyOpened.configure(font=("Verdana", 50, "bold"))
 recentlyOpened.place(x=210, y=250)
 
@@ -395,7 +468,7 @@ entryVirtualAssistant.insert(5, "Введите запрос...")
 entryVirtualAssistant.bind("<Button-1>", clearEntryVirtualAssistant)
 entryVirtualAssistant.place(x=400, y=100)
 
-btnIndex = customtkinter.CTkButton(index, text="Виртуальный\n помощник", compound="right", image=robot)
+btnIndex = customtkinter.CTkButton(index, text="Виртуальный\n помощник", command=startAnswer, compound="right", image=robot)
 btnIndex.configure(font=("Verdana", 16, "bold"), width=90,
                    text_color="#99621E",
                    fg_color="#B8860B",
@@ -448,11 +521,6 @@ labelMyLibrary = customtkinter.CTkLabel(myLibrary, text="Моя библиоте
 labelMyLibrary.configure(font=("Verdana", 64, "bold"))
 labelMyLibrary.place(x=480, y=10)
 
-def createNothingWasFound():
-    nothingWasFound = customtkinter.CTkLabel(myLibrary, text="Ничего не найдено", text_color="#BDB76B")
-    myLibrary.nothingWasFound = nothingWasFound
-    nothingWasFound.configure(font=("Verdana", 40, "bold"))
-    nothingWasFound.place(x=600, y=350)
 
 readerTextBox = customtkinter.CTkTextbox(reader)
 readerTextBox.place(x=200, y=50)
@@ -570,7 +638,7 @@ def checkOpenReader():
     window.after(1000, checkOpenReader)
 
 
-
+aff2()
 displayBooks()
 displayBooksOnStartup()
 showFrame(index)

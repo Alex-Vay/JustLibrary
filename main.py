@@ -6,7 +6,6 @@ from reader.reader import readBook
 def createTable():
     conn = sqlite3.connect('metadata.db')
     cursor = conn.cursor()
-
     cursor.execute('''CREATE TABLE IF NOT EXISTS books
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
                  title TEXT DEFAULT 'Нет данных',
@@ -31,7 +30,6 @@ def createTable():
 def filterBooks(arguments):
     conn = sqlite3.connect('metadata.db')
     cursor = conn.cursor()
-
     firstQuery = "SELECT id FROM books WHERE "
     secondQuery = "SELECT * FROM books WHERE "
     conditions = []
@@ -54,7 +52,6 @@ def getBook(book, cursor):
     return metadata
 
 
-
 def getBooks():
     conn = sqlite3.connect('metadata.db')
     cursor = conn.cursor()
@@ -67,9 +64,6 @@ def getBooks():
         books = cursor.fetchall()
         cursor.execute("SELECT * FROM books")
         booksFetch = cursor.fetchall()
-        # для получения одной книги
-        # for i in books: #list(map(lambda x: str(x).strip("(),"), books)):
-        #     print(get_book(i[0], cursor))
         conn.close()
         return booksFetch
 
@@ -115,12 +109,10 @@ def addBook(metadata):
 def searchBook(query):
     url = 'https://www.googleapis.com/books/v1/volumes'
     params = {'q': query}
-
     try:
         response = requests.get(url, params=params)
         response.raise_for_status()
         data = response.json()
-
         if 'items' in data:
             book = data['items'][0]['volumeInfo']
             title = book.get('title', 'Нет данных')
@@ -129,7 +121,6 @@ def searchBook(query):
             date = book.get('date', 'Нет данных')
             publisher = book.get('publisher', 'Нет данных')
             language = book.get('language', 'Нет данных')
-
             book_info = {
                 'title': title,
                 'author': str(author).strip("[]'"),
@@ -139,11 +130,9 @@ def searchBook(query):
                 'language': language,
             }
             return book_info
-
         else:
             print('По заданному запросу ничего не удалось найти!')
             return None
-
     except requests.exceptions.RequestException as e:
         print('Ошибка при выполнении запроса:', e)
         return None
@@ -176,6 +165,7 @@ def extractMetadata(file):
                 'text': text, 'tags': None,  'format': None, 'cover': None, 'series': None, 'series_index': None, 'path': file}
     except:
         return book
+
 
 if __name__ == "__main__":
     root = Tk()
