@@ -7,7 +7,7 @@ from openai import OpenAI
 numberSimilarBooks = 7
 
 
-def getResponse(message):
+def getResponse2(message):
     apiKey = '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'
     os.environ["OPENAI_API_KEY"] = apiKey
     client = OpenAI(
@@ -27,7 +27,7 @@ def getResponse(message):
     return response.choices[0].message.content
 
 
-def getResponse2(message):
+def getResponse(message):
     _providers = [
         g4f.Provider.GeekGpt,
         g4f.Provider.ChatBase,
@@ -56,7 +56,7 @@ def getResponse2(message):
 
 
 def getSimilarBooks(bookName):
-    return getResponse("Приведи список из" + str(numberSimilarBooks) + "похожих на " + bookName + "книг")
+    return getResponse("Приведи список из" + str(numberSimilarBooks) + "книг похожих на книгу" + bookName)
 
 
 def explainTerm(term):
@@ -69,7 +69,7 @@ def getBookInfo(bookName):
     return getResponse("Приведи только достоверные исторические факты о книге " + bookName)
 
 
-def getBbookAnalogies(bookName):
+def getBookAnalogies(bookName):
     return getResponse("Приведи примеры только реально существующих фильмов и пьес по книге " + bookName)
 
 

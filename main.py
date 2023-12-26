@@ -92,8 +92,6 @@ def addBook(metadata):
     conn = sqlite3.connect('metadata.db')
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM books WHERE path=?", (metadata['path'],))
-    isAlreadyExist = cursor.fetchone()
-    if isAlreadyExist: return
     cursor.execute('''
         INSERT INTO books (title, author, publisher, description, date_book, language_book, text, tags, format, cover,
         series, series_index, path)

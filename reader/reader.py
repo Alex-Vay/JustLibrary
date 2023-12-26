@@ -26,20 +26,6 @@ def fb2Read(filepath):
         endMainText = text.rfind("body")
         text = (html2text.html2text(text[startMainText + 5:endMainText - 2]))
         return Book(text, metadata)
-# разбиение по главам с помощью soup
-# def compile_chapter(section: Tag):
-#     title = title_tag.get_text(strip=True) if (
-#         title_tag := section.find('title')
-#     ) else ''
-#     rows = '\n'.join(
-#         [p.get_text(strip=True) for p in title_tag.find_next_siblings('p')]
-#     )
-#     return f'{title}\n{rows}'
-#
-# with open('book.fb2', 'r', encoding='utf-8') as xml:
-#     soup = Soup(xml.read(), 'lxml')
-#
-# chapters = [*map(compile_chapter, soup.find_all('section'))]
 
 
 def epubRead(filepath):
@@ -48,7 +34,7 @@ def epubRead(filepath):
     text = ''
     for item in book.get_items():
         if item.get_type() == ebooklib.ITEM_DOCUMENT:
-            text += html2text.html2text(item.get_body_content().decode('utf-8')).replace("_", "\t")
+            text += html2text.html2text(item.get_body_content().decode('utf-8'))
     return Book(text, metadata)
 
 
@@ -95,18 +81,8 @@ def readBook(filepath):
         case _:
             return "Я не работаю с таким форматом(("
     metadata.text = re.sub(r"(?<!\n)\n(?!\n)", " ", metadata.text)
-    metadata.text = metadata.text.replace("\n\n", "\n")
+    metadata.text = metadata.text.replace("\n\n", "\n").replace("_", "\t")
+    startIndex = metadata.text.find("* * *")
+    endIndex = metadata.text.find("* * *", startIndex + 3)
+    metadata.text = metadata.text[:startIndex] + metadata.text[endIndex+2:]
     return metadata
-
-
-'''
-title
-author_list
-series
-series_index
-tag_list
-description
-cover_image_data
-
-format
-'''
