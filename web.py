@@ -136,13 +136,16 @@ def clickToAddBook():
         metadata = extractMetadata(selectedFile)
         if isinstance(metadata, str):
             return metadata
-        addBook(metadata)
-        bookPath = metadata["path"]
         text = metadata['text']
+        if len(text) > 25000:
+            addBook(metadata)
+        bookPath = metadata["path"]
     readerTextBox.configure(state="normal")
     readerTextBox.delete("0.0", "end")
     readerTextBox.insert("0.0", text)
-    readerTextBox.see(currentBookLastFragment(bookPath))
+    try:
+        readerTextBox.see(currentBookLastFragment(bookPath))
+    except: pass
     readerTextBox.configure(state="disabled")
     showFrame(reader)
     displayBooks()
