@@ -2,9 +2,7 @@ import sqlite3
 from tkinter import Tk, filedialog
 import requests
 from reader.reader import readBook
-import multiprocessing
-import pyttsx3
-import keyboard
+
 
 def createTable():
     conn = sqlite3.connect('metadata.db')
