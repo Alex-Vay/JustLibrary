@@ -743,9 +743,9 @@ labelMyLibrary.place(relx=0.31, rely=0.01)
 
 
 readerTextBox = customtkinter.CTkTextbox(reader)
-readerTextBox.place(relx=0.103, rely=0.05)
+readerTextBox.place(relx=0.103, rely=0.07)
 readerTextBox.configure(font=("Calibre", TEXTSIZE),
-                        width=1720, height=960,
+                        width=1720, height=970,
                         wrap="word", state="disabled",
                         spacing3=TEXTSPACING,
                         text_color=TEXTCOLOR, fg_color=READERCOLOR)
