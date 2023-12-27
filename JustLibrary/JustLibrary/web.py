@@ -94,7 +94,7 @@ def say(text):
     engine.runAndWait()
 
 def openBookText(bookId):
-    global bookPath, current_index
+    global bookPath, currentIndex
     current_index = 0
     book_text = getBookText(bookId)
     readerTextBox.configure(state="normal")
@@ -109,16 +109,16 @@ def openBookText(bookId):
     showFrame(reader)
 
 isStopping = False
-current_index = 0
+currentIndex = 0
 
 def startReading():
-    global isStopping, current_index
+    global isStopping, currentIndex
     isStopping = False
     book_text = readerTextBox.get("0.0", "end")
     words = re.split('[.!?,-]', book_text)
 
     def read_words():
-        global current_index
+        global currentIndex
         for i in range(current_index, len(words)):
             if isStopping:
                 break
