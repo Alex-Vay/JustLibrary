@@ -1,14 +1,16 @@
 import os
+import re
 import threading
 import customtkinter
 from PIL import ImageTk, Image
 from customtkinter import CTk
-from main import createTable, extractMetadata, addBook, updateField, filterBooks
+from main import createTable, extractMetadata, addBook, updateField, filterBooks, searchBook, updateBooks
 from tkinter import filedialog, colorchooser
 import sqlite3
 import io
 from statistics import startTimer, stopTimer, getStatistics, cleanStatistics
 from virtual_assistant.chatgpt_functions import getResponse, getSimilarBooks, getBookInfo, getBookAnalogies, explainTerm, retellText
+import pyttsx3
 
 
 def getReaderSettings():
@@ -26,6 +28,9 @@ def getReaderSettings():
 window = CTk()
 # window.overrideredirect(1) #убирает возможность закрыть/свернуть/ужать приложение
 window.geometry("{0}x{1}+0+0".format(window.winfo_screenwidth(), window.winfo_screenheight()))
+window.title("Электронная библиотека")
+window.iconbitmap('img/icon.ico')
+
 
 FONTCOF = 18 / 26
 SPACECOF = 42 / 26
@@ -34,6 +39,8 @@ CHANGEVALUE = 2
 bookPath = ''
 currentBook = ''
 currentText = ''
+
+nothingWasFoundColor = "#BDB76B"
 
 index = customtkinter.CTkFrame(window, fg_color="#99621E")
 myLibrary = customtkinter.CTkFrame(window, fg_color="#99621E")
@@ -72,9 +79,17 @@ def getBookText(bookId):
     conn.close()
     return book_text
 
+engine = pyttsx3.init()
+engine.setProperty('rate', 250)
+engine.setProperty('volume', 0.9)
+
+def say(text):
+    engine.say(text)
+    engine.runAndWait()
 
 def openBookText(bookId):
-    global bookPath
+    global bookPath, current_index
+    current_index = 0
     book_text = getBookText(bookId)
     readerTextBox.configure(state="normal")
     readerTextBox.delete("0.0", "end")
@@ -86,6 +101,31 @@ def openBookText(bookId):
     readerTextBox.see(currentBookLastFragment(bookPath))
     readerTextBox.configure(state="disabled")
     showFrame(reader)
+
+isStopping = False
+current_index = 0
+
+def startReading():
+    global isStopping, current_index
+    isStopping = False
+    book_text = readerTextBox.get("0.0", "end")
+    words = re.split('[.!?,-]', book_text)
+
+    def read_words():
+        global current_index
+        for i in range(current_index, len(words)):
+            if isStopping:
+                break
+            say(words[i])
+            current_index = i + 1
+
+    threading.Thread(target=read_words).start()
+
+def stopReading():
+    global isStopping
+    isStopping = True
+
+
 
 
 def getBooksId(arguments=None):
@@ -123,7 +163,6 @@ def checkBook(path):
 
 def clickToAddBook():
     global bookPath
-    myLibrary.nothingWasFound.destroy()
     selectedFile = filedialog.askopenfilename()
     createTable()
     if checkBook(selectedFile):
@@ -147,8 +186,10 @@ def clickToAddBook():
         readerTextBox.see(currentBookLastFragment(bookPath))
     except: pass
     readerTextBox.configure(state="disabled")
-    showFrame(reader)
+    #showFrame(reader)
+    #Нужно ли чтобы сразу читалка открывалась после добавления книги?
     displayBooks()
+    createNothingWasFound()
 
 
 def getCover(bookId):
@@ -173,12 +214,14 @@ def showMenu(book, x, y):
     currentOption = customtkinter.StringVar(window)
     currentOption.set(libraryOptions[0])
     menu.configure(variable=currentOption)
-    currentOption.trace('w', lambda *args: myShow(book, currentOption))
+    currentOption.trace('w', lambda *args: myShow(book, currentOption, x, y))
     menu.place(x=x, y=y)
 
 
 def hideMenu():
     menu.place(x=-1000, y=-1000)
+    chooseUpdateMenu.place(x=-1000, y=-1000)
+    updateFieldsMenu.place(x=-1000, y=-1000)
 
 
 def myShow(*args):
@@ -186,10 +229,121 @@ def myShow(*args):
     currentOption = args[1]
     action = currentOption.get()
     currentBook = args[0]
-    match action[0]:
-        case "Н": startAnswer(similarBookResponse)
-        case "И": startAnswer(bookInfoResponse)
-        case "П": startAnswer(bookAnalogiesResponse)
+    x, y = args[2], args[3]
+    match action[:2]:
+        case "На": startAnswer(similarBookResponse)
+        case "Ин": showInformation(currentBook)
+        case "По": startAnswer(bookAnalogiesResponse)
+        case "Уд": deleteBook(currentBook[0])
+        case "Из": chooseUpdate(currentBook, currentOption, x, y)
+    menu.place(x=-1000, y=-1000)
+
+def showInformation(book):
+    currentBook = book
+    app = customtkinter.CTk()
+    app.title('Информация о книге')
+    app.geometry("640x480")
+    app.iconbitmap('img/icon.ico')
+    print(type(currentBook[3]
+               ))
+    textbox = customtkinter.CTkTextbox(app)
+    textbox.configure(width=640, height=500)
+    textbox.grid(row=0, column=0)
+    keys = {
+        'ID Книги': str(currentBook[0]),
+        'Название': str(currentBook[1]),
+        'Автор': str(currentBook[2]),
+        'Издатель': str(currentBook[3]),
+        'Описание': str(currentBook[4]),
+        'Дата': str(currentBook[5]),
+        'Язык': str(currentBook[6]),
+        'Жанр': str(currentBook[8]),
+        'Формат': str(currentBook[9]),
+        'Номер в серии книг': str(currentBook[11]),
+        'Путь': str(currentBook[12]),
+        'Категория': str(currentBook[13]),
+        'Последний фрагмент': str(currentBook[14])
+    }
+
+    for key, value in keys.items():
+        keys[key] += '\n'
+        if value == 'None':
+            keys[key] = 'Нет данных'
+
+    text = ""
+    for key, value in keys.items():
+        text += key + ": " + value + "\n"  # Добавляем ключ и значение на новую строку
+    textbox.insert("0.0", text)
+    textbox.configure(state="disabled", font=("Verdana", 16))
+    app.mainloop()
+
+
+libraryChoices = ["Загрузить данные из интернета", "Изменить поля самостоятельно"]
+currentOption = customtkinter.StringVar(window)
+currentOption.set(libraryChoices[0])
+
+def chooseUpdate(*args):
+    global chooseUpdateMenu
+    currentBook, currentOption, x, y = args[0], args[1], args[2], args[3]
+    currentOption = customtkinter.StringVar(window)
+    currentOption.set(libraryChoices[0])
+    chooseUpdateMenu = customtkinter.CTkOptionMenu(window, variable=currentOption, values=libraryChoices)
+    currentOption.trace('w', lambda *args: secondMyShow(currentBook, currentOption, x, y))
+    chooseUpdateMenu.place(x=x, y=y)
+
+def secondMyShow(*args):
+    global currentBook, chooseUpdateMenu
+    bookPath = currentBook[13]
+    currentOption = args[1]
+    action = currentOption.get()
+    currentBook = args[0]
+    x, y = args[2], args[3]
+    match action[:3]:
+        case "Заг":
+            inputWindow = customtkinter.CTkInputDialog(text='Введите данные', title="Поиск метаданных")
+            query = inputWindow.get_input()
+            metadata = searchBook(query+'книга')
+            updateBooks(metadata, bookPath)
+        case "Изм":
+            updateFields(currentBook, currentOption, x, y)
+    chooseUpdateMenu.place(x=-1000, y=-1000)
+
+
+libraryFields = ["Название", "Автор", "Издатель", "Описание", "Дата", "Язык", "Категория", 'Жанр', 'Формат']
+
+def updateFields(*args):
+    global updateFieldsMenu, currentBook
+    currentBook, x, y = args[0], args[2], args[3]
+    currentOption = customtkinter.StringVar(window)
+    currentOption.set(libraryFields[0])
+    updateFieldsMenu = customtkinter.CTkOptionMenu(window, variable=currentOption, values=libraryFields)
+    currentOption.trace('w', lambda *args: thirdMyShow(currentBook, currentOption, x, y))
+    updateFieldsMenu.place(x=x, y=y)
+
+
+def thirdMyShow(*args):
+    global currentBook, updateFieldsMenu
+    bookPath = currentBook[13]
+    currentOption = args[1]
+    action = currentOption.get()
+    currentBook = args[0]
+    x, y = args[2], args[3]
+    match action[:2]:
+        case "На": doUpdate(bookPath, 'title')
+        case "Ав": doUpdate(bookPath, 'author')
+        case "Из": doUpdate(bookPath, 'publisher')
+        case "Оп": doUpdate(bookPath, 'description')
+        case "Да": doUpdate(bookPath, 'date_book')
+        case "Яз": doUpdate(bookPath, 'language_book')
+        case "Ка": doUpdate(bookPath, 'categories')
+        case "Жа": doUpdate(bookPath, 'tags')
+        case "Фо": doUpdate(bookPath, 'format')
+    updateFieldsMenu.place(x=-1000, y=-1000)
+
+def doUpdate(bookPath, field):
+    inputWindow = customtkinter.CTkInputDialog(text='Введите название категории', title="Изменение категории")
+    query = inputWindow.get_input()
+    updateField(bookPath, field, query)
 
 
 def similarBookResponse():
@@ -271,14 +425,9 @@ def createBoxForBook(i, coverData, frame, y1, book):
     newBtn.place(x=x, y=y)
 
 
-
-def addCategoryForBook(bookPath):
-    query = entryMyLibrary.get()
-    updateField(bookPath, 'categories', query)
-
-
+nothingInSearch = True
 def displayBooks(query=None):
-    createNothingWasFound()
+    global nothingInSearch
     createTable()
     booksFetch, latestBookId = getBooksId(query)
     children = myLibrary.winfo_children()
@@ -286,7 +435,6 @@ def displayBooks(query=None):
     if not booksFetch:
         print("No books added yet")
     else:
-        myLibrary.nothingWasFound.destroy()
         for i, book in enumerate(booksFetch):
             bookPath = booksFetch[i][13]
             coverData = getCover(book[0])
@@ -297,6 +445,8 @@ def displayBooks(query=None):
             bookPath = booksFetch[i][13]
             coverData = getCover(book[0])
             createBoxForBook(i, coverData, index, 350, booksFetch[i])
+    nothingInSearch = True if latestBookId is None else False
+    createNothingWasFound()
 
 
 def clearAllBooksMainPage():
@@ -307,7 +457,6 @@ def clearAllBooksMainPage():
 
 def ClickToFindBooks():
     clearAllWidgetsBooks()
-    myLibrary.nothingWasFound.destroy()
     query = entryMyLibrary.get()
     displayBooks(query)
 
@@ -323,7 +472,18 @@ def deleteBooks():
     cursor.execute('''DROP TABLE IF EXISTS books''')
     conn.close()
     clearAllWidgetsBooks()
+    clearAllBooksMainPage()
     createNothingWasFound()
+
+def deleteBook(id):
+    conn = sqlite3.connect('metadata.db')
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM books WHERE id=?", (id,))
+    conn.commit()
+    conn.close()
+    clearAllBooksMainPage()
+    clearAllWidgetsBooks()
+    displayBooks()
 
 
 def checkSize(size, num):
@@ -393,8 +553,11 @@ def clearEntryMyLibrary(event):
 isDarkMode = False
 def click_to_toggle_mode():
     global isDarkMode
+    global nothingWasFoundColor
     isDarkMode = not isDarkMode
     if isDarkMode:
+        nothingWasFoundColor = "#808080"
+        createNothingWasFound()
         btnAddBook.configure(fg_color="black", text_color="#808080", hover_color="#696969")
         btnReader.configure(fg_color="black", text_color="#808080", hover_color="#696969")
         btnLibrary.configure(fg_color="black", text_color="#808080", hover_color="#696969")
@@ -409,9 +572,13 @@ def click_to_toggle_mode():
         entryVirtualAssistant.configure(fg_color="#2F4F4F")
         btnIndex.configure(fg_color="black", text_color="#808080", hover_color="#696969")
         btnMyLibrary.configure(fg_color="black", text_color="#808080", hover_color="#696969")
+        btnDelete.configure(fg_color="black", text_color="#808080", hover_color="#696969")
         entryMyLibrary.configure(fg_color="#2F4F4F")
         btnExit.configure(fg_color="black", text_color="#808080", hover_color="#696969")
+        reader.configure(fg_color="#A9A9A9")
     else:
+        nothingWasFoundColor = "#BDB76B"
+        createNothingWasFound()
         btnAddBook.configure(fg_color="#99621E", hover_color="#F0E68C", text_color="#B8860B", border_width=3, border_color="black", corner_radius=10)
         btnReader.configure(fg_color="#99621E",hover_color="#F0E68C",text_color="#B8860B",border_width=3,border_color="black",corner_radius=10)
         btnLibrary.configure(fg_color="#99621E", hover_color="#F0E68C", text_color="#B8860B", border_width=3, border_color="black", corner_radius=10)
@@ -419,6 +586,7 @@ def click_to_toggle_mode():
         btnMode.configure(fg_color="#99621E", hover_color="#F0E68C", text_color="#B8860B", border_width=3, border_color="black", corner_radius=10)
         navigation.configure(fg_color="#B8860B")
         index.configure(fg_color="#99621E")
+        reader.configure(fg_color="#99621E")
         myLibrary.configure(fg_color="#99621E")
         labelIndex.configure(text_color="#BDB76B")
         recentlyOpened.configure(text_color="#BDB76B")
@@ -428,7 +596,41 @@ def click_to_toggle_mode():
         btnIndex.configure(fg_color="#B8860B", hover_color="#F0E68C", text_color="#99621E", border_width=3, border_color="black", corner_radius=10)
         btnMyLibrary.configure(font=("Verdana", 16, "bold"), width=90, height=35,text_color="#99621E",fg_color="#B8860B",border_width=3,border_color="black",corner_radius=10,hover_color="#F0E68C")
         entryMyLibrary.configure(font=("Verdana", 18, "bold"), width=500, height=35,border_width=3,corner_radius=10,border_color="black",fg_color="#B8860B")
+        btnDelete.configure(fg_color="#FF7F50", text_color="#DC143C", hover_color="#FF4500")
 
+
+def createNothingWasFound():
+    global nothingWasFoundColor, nothingInSearch
+    conn = sqlite3.connect('metadata.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='books'")
+    result = cursor.fetchone()
+    count = 0
+    if result:
+        cursor.execute("SELECT COUNT(*) FROM books")
+        count = cursor.fetchone()[0]
+
+    conn.close()
+    if result == None or nothingInSearch == True:
+        try:
+            deleteNothingWasFound()
+        except:
+            pass
+        if result == None:
+            nothingWasFoundMenu = customtkinter.CTkLabel(index, text="Ничего не найдено",
+                                                         text_color=nothingWasFoundColor)
+            index.nothingWasFoundMenu = nothingWasFoundMenu
+            nothingWasFoundMenu.configure(font=("Verdana", 40, "bold"))
+            nothingWasFoundMenu.place(x=600, y=450)
+        nothingWasFoundLibrary = customtkinter.CTkLabel(myLibrary, text="Ничего не найдено", text_color=nothingWasFoundColor)
+        myLibrary.nothingWasFoundLibrary = nothingWasFoundLibrary
+        nothingWasFoundLibrary.configure(font=("Verdana", 40, "bold"))
+        nothingWasFoundLibrary.place(x=600, y=350)
+    else:
+        try:
+            deleteNothingWasFound()
+        except:
+            pass
 
 def startAnswer(question):
     thread = threading.Thread(target=question)
@@ -457,24 +659,22 @@ def openAdditionalFrame(text):
     return additionalFrame
 
 
+def deleteNothingWasFound():
+    myLibrary.nothingWasFoundLibrary.destroy()
+    index.nothingWasFoundMenu.destroy()
 
-def createNothingWasFound():
-    nothingWasFound = customtkinter.CTkLabel(myLibrary, text="Ничего не найдено", text_color="#BDB76B")
-    myLibrary.nothingWasFound = nothingWasFound
-    nothingWasFound.configure(font=("Verdana", 40, "bold"))
-    nothingWasFound.place(x=600, y=350)
 
 
 labelIndex = customtkinter.CTkLabel(index, text="Главная", text_color="#BDB76B")
 labelIndex.configure(font=("Verdana", 64, "bold"))
-labelIndex.place(x=600, y=10)
+labelIndex.place(relx=0.4, rely=0.01)
 
 labelLogo = customtkinter.CTkLabel(index, image=logo, text="")
-labelLogo.place(x=1300, y=10)
+labelLogo.place(relx=0.85, rely=0.01)
 
 recentlyOpened = customtkinter.CTkLabel(index, text="Недавно добавленные:", text_color="#BDB76B")
 recentlyOpened.configure(font=("Verdana", 50, "bold"))
-recentlyOpened.place(x=210, y=250)
+recentlyOpened.place(relx=0.14, rely=0.3)
 
 entryVirtualAssistant = customtkinter.CTkEntry(index, justify='center')
 entryVirtualAssistant.configure(font=("Verdana", 22, "bold"), width=420, height=60,
@@ -484,7 +684,7 @@ entryVirtualAssistant.configure(font=("Verdana", 22, "bold"), width=420, height=
                                 fg_color="#B8860B")
 entryVirtualAssistant.insert(5, "Введите запрос...")
 entryVirtualAssistant.bind("<Button-1>", clearEntryVirtualAssistant)
-entryVirtualAssistant.place(x=400, y=100)
+entryVirtualAssistant.place(relx=0.26, rely=0.12)
 
 btnIndex = customtkinter.CTkButton(index, text="Виртуальный\n помощник", command=lambda: startAnswer(mainResponse),
                                    compound="right", image=robot)
@@ -496,12 +696,12 @@ btnIndex.configure(font=("Verdana", 16, "bold"), width=90,
                    corner_radius=10,
                    hover_color="#F0E68C")
 index.btnIndex = btnIndex
-btnIndex.place(x=830, y=100)
+btnIndex.place(relx=0.54, rely=0.12)
 
 statisticsLabel = customtkinter.CTkButton(index, text=getStatistics(), command=clean)
 statisticsLabel.configure(font=("Verdana", 24, "bold"))
 index.statisticsLabel = statisticsLabel
-statisticsLabel.place(x=800, y=770)
+statisticsLabel.place(relx=0.3, rely=0.88)
 
 entryMyLibrary = customtkinter.CTkEntry(myLibrary, justify='center')
 entryMyLibrary.configure(font=("Verdana", 18, "bold"), width=500, height=35,
@@ -510,9 +710,9 @@ entryMyLibrary.configure(font=("Verdana", 18, "bold"), width=500, height=35,
                          border_color="black",
                          fg_color="#B8860B")
 
-entryMyLibrary.insert(5, "Введите")
+entryMyLibrary.insert(5, "Введите запрос")
 entryMyLibrary.bind("<Button-1>", clearEntryMyLibrary)
-entryMyLibrary.place(x=470, y=100)
+entryMyLibrary.place(relx=0.31, rely=0.12)
 
 
 btnMyLibrary = customtkinter.CTkButton(myLibrary, text="Искать", command=ClickToFindBooks, image=search, compound="left")
@@ -524,27 +724,27 @@ btnMyLibrary.configure(font=("Verdana", 16, "bold"), width=90, height=35,
                        border_color="black",
                        corner_radius=10,
                        hover_color="#F0E68C")
-btnMyLibrary.place(x=980, y=100)
+btnMyLibrary.place(relx=0.64, rely=0.12)
 
 btnDelete = customtkinter.CTkButton(myLibrary, text="Удалить книги", command=deleteBooks)
 myLibrary.btnDelete = btnDelete
 btnDelete.configure(font=("Verdana", 16, "bold"), width=90, height=35,
-                       text_color="#99621E",
-                       fg_color="#B8860B",
+                       text_color="#DC143C",
+                       fg_color="#FF7F50",
                        border_width=3,
                        border_color="black",
                        corner_radius=10,
-                       hover_color="#F0E68C")
-btnDelete.place(x=1115, y=100)
+                       hover_color="#FF4500")
+btnDelete.place(relx=0.725, rely=0.12)
 
 
 labelMyLibrary = customtkinter.CTkLabel(myLibrary, text="Моя библиотека", text_color="#BDB76B")
 labelMyLibrary.configure(font=("Verdana", 64, "bold"))
-labelMyLibrary.place(x=480, y=10)
+labelMyLibrary.place(relx=0.31, rely=0.01)
 
 
 readerTextBox = customtkinter.CTkTextbox(reader)
-readerTextBox.place(x=200, y=50)
+readerTextBox.place(relx=0.13, rely=0.05)
 readerTextBox.configure(font=("Calibre", TEXTSIZE),
                         width=1720, height=960,
                         wrap="word", state="disabled",
@@ -553,31 +753,39 @@ readerTextBox.configure(font=("Calibre", TEXTSIZE),
 readerTextBox.bind("<Button-3>", lambda event: processText())
 
 readerFontIncrease = customtkinter.CTkButton(reader, text="Тт+", command=lambda: changeFont(CHANGEVALUE))
-readerFontIncrease.place(x=200, y=0)
+readerFontIncrease.place(relx=0.13, rely=0.005)
 readerFontIncrease.configure(font=("Calibre", 24), width=45)
 
 readerFontReduce = customtkinter.CTkButton(reader, text="Тт-", command=lambda: changeFont(-CHANGEVALUE))
-readerFontReduce.place(x=260, y=0)
+readerFontReduce.place(relx=0.17, rely=0.005)
 readerFontReduce.configure(font=("Calibre", 24), width=45)
 
 readerSpaceIncrease = customtkinter.CTkButton(reader, text="A+", command=lambda: changeTextSpacing(CHANGEVALUE))
-readerSpaceIncrease.place(x=320, y=0)
+readerSpaceIncrease.place(relx=0.21, rely=0.005)
 readerSpaceIncrease.configure(font=("Calibre", 24), width=45)
 
 readerSpaceReduce = customtkinter.CTkButton(reader, text="A-", command=lambda: changeTextSpacing(-CHANGEVALUE))
-readerSpaceReduce.place(x=380, y=0)
+readerSpaceReduce.place(relx=0.25, rely=0.005)
 readerSpaceReduce.configure(font=("Calibre", 24), width=45)
 
 readerTextColor = customtkinter.CTkButton(reader, text="Цвет текста", command=lambda: changeColor("text"))
-readerTextColor.place(x=440, y=0)
+readerTextColor.place(relx=0.29, rely=0.005)
 readerTextColor.configure(font=("Calibre", 24), width=140)
 
 readerReaderColor = customtkinter.CTkButton(reader, text="Цвет фона", command=lambda: changeColor("reader"))
-readerReaderColor.place(x=600, y=0)
+readerReaderColor.place(relx=0.4, rely=0.005)
 readerReaderColor.configure(font=("Calibre", 24), width=100)
 
+readerSpeak = customtkinter.CTkButton(reader, text="Пересказ", command=startReading)
+readerSpeak.place(relx=0.5, rely=0.005)
+readerSpeak.configure(font=("Calibre", 26), width=100)
+
+readerStopSpeak = customtkinter.CTkButton(reader, text="Стоп", command=stopReading)
+readerStopSpeak.place(relx=0.6, rely=0.005)
+readerStopSpeak.configure(font=("Calibre", 26), width=100)
+
 readerReaderClean = customtkinter.CTkButton(reader, text="Очистить настройки", command=cleanReaderSettings)
-readerReaderClean.place(x=1600, y=0)
+readerReaderClean.place(relx=0.8, rely=0.005)
 readerReaderClean.configure(font=("Calibre", 24), width=100)
 
 btnMain = customtkinter.CTkButton(navigation, text="Главная", command=lambda: showFrame(index))
@@ -588,7 +796,7 @@ btnMain.configure(font=("Verdana", 32, "bold"), width=50,
                   border_width=3,
                   border_color="black",
                   corner_radius=10)
-btnMain.place(x=10, y=60)
+btnMain.place(relx=0.07, rely=0.06)
 
 btnLibrary = customtkinter.CTkButton(navigation, text="Моя\nбиблиотека", command=lambda: showFrame(myLibrary))
 btnLibrary.configure(font=("Verdana", 22, "bold"), width=30,
@@ -598,7 +806,7 @@ btnLibrary.configure(font=("Verdana", 22, "bold"), width=30,
                      border_width=3,
                      border_color="black",
                      corner_radius=10)
-btnLibrary.place(x=10, y=150)
+btnLibrary.place(relx=0.07, rely=0.15)
 
 btnReader = customtkinter.CTkButton(navigation, text="Читалка", command=lambda: showFrame(reader))
 btnReader.configure(font=("Verdana", 32, "bold"), width=170, height=60,
@@ -608,17 +816,17 @@ btnReader.configure(font=("Verdana", 32, "bold"), width=170, height=60,
                     border_width=3,
                     border_color="black",
                     corner_radius=10)
-btnReader.place(x=10, y=240)
+btnReader.place(relx=0.07, rely=0.26)
 
 btnAddBook = customtkinter.CTkButton(navigation, text="Добавить\nкнигу", command=clickToAddBook)
-btnAddBook.configure(font=("Verdana", 22, "bold"), width=170,
+btnAddBook.configure(font=("Verdana", 22, "bold"), width=175,
                      fg_color="#99621E",
                      hover_color="#F0E68C",
                      text_color="#B8860B",
                      border_width=3,
                      border_color="black",
                      corner_radius=10)
-btnAddBook.place(x=10, y=330)
+btnAddBook.place(relx=0.07, rely=0.36)
 
 btnMode = customtkinter.CTkButton(navigation, text="Режимы", command=lambda: click_to_toggle_mode())
 btnMode.configure(font=("Verdana", 32, "bold"), width=170, height=60,
@@ -628,7 +836,7 @@ btnMode.configure(font=("Verdana", 32, "bold"), width=170, height=60,
                     border_width=3,
                     border_color="black",
                     corner_radius=10)
-btnMode.place(x=10, y=420)
+btnMode.place(relx=0.07, rely=0.47)
 
 btnExit = customtkinter.CTkButton(navigation, text="Выйти", command=exitApp)
 btnExit.configure(font=("Verdana", 42, "bold"), width=160,
@@ -638,7 +846,7 @@ btnExit.configure(font=("Verdana", 42, "bold"), width=160,
                   border_width=5,
                   border_color="black",
                   corner_radius=10)
-btnExit.place(x=10, y=780)
+btnExit.place(relx=0.07, rely=0.88)
 
 startIndex = '1.0'
 endIndex = 0

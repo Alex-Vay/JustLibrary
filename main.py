@@ -3,6 +3,7 @@ from tkinter import Tk, filedialog
 import requests
 from reader.reader import readBook
 
+
 def createTable():
     conn = sqlite3.connect('metadata.db')
     cursor = conn.cursor()
@@ -68,15 +69,14 @@ def getBooks():
         return booksFetch
 
 
-def updateBooks(metadata):
+def updateBooks(metadata, path):
     conn = sqlite3.connect('metadata.db')
     cursor = conn.cursor()
-    cursor.execute("UPDATE books SET title=?, author=?, publisher=?, description=?, subject=?, date_book=?, language_book=?, " +
-                   "text=?, tags=?, format=?, cover=?, series=?, series_index=?, path=? WHERE id=?",
+    cursor.execute("UPDATE books SET title=?, author=?, publisher=?, description=?, date_book=?, language_book=?, " +
+                   "text=?, categories=? WHERE path=?",
               (metadata['title'], (metadata['author']), metadata['publisher'],
-               metadata['description'], metadata['date'], metadata['language'],
-               metadata['text'], metadata['tags'], metadata['format'], metadata['cover'],
-               metadata['series'], metadata['series_index'], metadata['path']))
+               metadata['description'], metadata['date_book'], metadata['language_book'],
+               metadata['text'], metadata['categories'], path))
     conn.commit()
     conn.close()
 
@@ -116,16 +116,20 @@ def searchBook(query):
             title = book.get('title', 'Нет данных')
             author = book.get('authors', 'Нет данных')
             description = book.get('description', 'Нет данных')
-            date = book.get('date', 'Нет данных')
+            date = book.get('publishedDate', 'Нет данных')
             publisher = book.get('publisher', 'Нет данных')
             language = book.get('language', 'Нет данных')
+            text = book.get('text', 'Нет данных')
+            categories = book.get('categories', 'Нет данных')
             book_info = {
                 'title': title,
                 'author': str(author).strip("[]'"),
-                #'publisher': publisher,
+                'publisher': publisher,
                 'description': description,
-                'date': date,
-                'language': language,
+                'date_book': date,
+                'language_book': language,
+                'text': text,
+                'categories':str(categories).strip("[]'"),
             }
             return book_info
         else:
@@ -165,8 +169,10 @@ def extractMetadata(file):
         return book
 
 
+
 if __name__ == "__main__":
     root = Tk()
+    searchBook('Метро книга')
     while True:
         conn = sqlite3.connect('metadata.db')
         cursor = conn.cursor()
