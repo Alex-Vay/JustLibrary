@@ -182,8 +182,7 @@ def clickToAddBook():
         readerTextBox.see(currentBookLastFragment(bookPath))
     except: pass
     readerTextBox.configure(state="disabled")
-    #showFrame(reader)
-    #Нужно ли чтобы сразу читалка открывалась после добавления книги?
+    showFrame(reader)
     displayBooks()
     createNothingWasFound()
 
@@ -196,9 +195,14 @@ def getCover(bookId):
     if coverData is not None:
         return coverData
     else:
-        cursor.execute("SELECT path FROM books WHERE id=?", (bookId,))
-        fileName = cursor.fetchone()[0].split('/')[-1]
-        return fileName
+        cursor.execute("SELECT title FROM books WHERE id=?", (bookId,))
+        bookTitle = cursor.fetchone()
+        if not bookTitle[0] is None:
+            bookTitle = bookTitle
+        else:
+            cursor.execute("SELECT path FROM books WHERE id=?", (bookId,))
+            bookTitle = cursor.fetchone()[0].split('/')[-1]
+        return bookTitle
 
 
 libraryOptions = ["Опции", "Удалить книгу", "Найти похожие", "Факты от ВиА", "По мотивам книги", "Собственные данные", "Изменить поля"]
@@ -267,10 +271,9 @@ def showInformation(book):
         keys[key] += '\n'
         if value == 'None':
             keys[key] = 'Нет данных'
-
     text = ""
     for key, value in keys.items():
-        text += key + ": " + value + "\n"  # Добавляем ключ и значение на новую строку
+        text += key + ": " + value + "\n"
     textbox.insert("0.0", text)
     textbox.configure(state="disabled", font=("Verdana", 16))
     app.mainloop()
@@ -434,13 +437,11 @@ def displayBooks(query=None):
         print("No books added yet")
     else:
         for i, book in enumerate(booksFetch):
-            bookPath = booksFetch[i][13]
             coverData = getCover(book[0])
             if i + 2 >= libraryBooks:
                 createBoxForBook(i, coverData, myLibrary, 200, booksFetch[i])
         clearAllBooksMainPage()
         for i, book in enumerate(booksFetch[-5:], start=0):
-            bookPath = booksFetch[i][13]
             coverData = getCover(book[0])
             createBoxForBook(i, coverData, index, 350, booksFetch[i])
     nothingInSearch = True if latestBookId is None else False

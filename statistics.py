@@ -12,7 +12,6 @@ def getStatistics():
         with open("statistic.txt", "r") as file:
             statistics = file.read().split()
             totalTime, words = float(statistics[0]), int(statistics[1])
-            #word_counter = word_counter/60*total_time
     except:
         pass
     return f"Время чтения: {round(totalTime / 3600, 4)} часов   Скорость чтения (в словах в минуту): {int(0 if totalTime == 0 else words / totalTime * 60)}"
