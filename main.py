@@ -22,7 +22,7 @@ def getReaderSettings():
                 settings[i] = int(settings[i])
             except: pass
         return settings
-    except: return [36, 10, "#000000", "#FFFFFF"]
+    except: return [36, 10, "#000000", "#d3deed"]
 
 
 window = CTk()
@@ -39,12 +39,12 @@ bookPath = ''
 currentBook = ''
 currentText = ''
 
-nothingWasFoundColor = "#BDB76B"
+nothingWasFoundColor = "#214ccf"
 
-index = customtkinter.CTkFrame(window, fg_color="#99621E")
-myLibrary = customtkinter.CTkFrame(window, fg_color="#99621E")
-reader = customtkinter.CTkFrame(window, fg_color="#99621E")
-navigation = customtkinter.CTkFrame(window, fg_color="#B8860B")
+index = customtkinter.CTkFrame(window, fg_color="#d3deed")
+myLibrary = customtkinter.CTkFrame(window, fg_color="#d3deed")
+reader = customtkinter.CTkFrame(window, fg_color="#d3deed")
+navigation = customtkinter.CTkFrame(window, fg_color="#000080")
 frames = [index, myLibrary, reader]
 navigation.place(x=0, y=0, relheight=1)
 
@@ -412,8 +412,8 @@ def createBoxForBook(i, coverData, frame, y1, book):
         newBtn.configure(image=coverImage, text='')
     except:
         newBtn.configure(text=parseTitle(coverData), width=150, height=200)
-    newBtn.configure(fg_color="#99621E",
-                     hover_color="#F0E68C",
+    newBtn.configure(fg_color="#000080",
+                     hover_color="#87CEFA",
                      border_width=3,
                      border_color="black",
                      corner_radius=10)
@@ -576,25 +576,25 @@ def clickToToggleMode():
         btnExit.configure(fg_color="black", text_color="#808080", hover_color="#696969")
         reader.configure(fg_color="#A9A9A9")
     else:
-        nothingWasFoundColor = "#BDB76B"
+        nothingWasFoundColor = "#214ccf"
         createNothingWasFound()
-        btnAddBook.configure(fg_color="#99621E", hover_color="#F0E68C", text_color="#B8860B", border_width=3, border_color="black", corner_radius=10)
-        btnReader.configure(fg_color="#99621E",hover_color="#F0E68C",text_color="#B8860B",border_width=3,border_color="black",corner_radius=10)
-        btnLibrary.configure(fg_color="#99621E", hover_color="#F0E68C", text_color="#B8860B", border_width=3, border_color="black", corner_radius=10)
-        btnMain.configure(fg_color="#99621E", hover_color="#F0E68C", text_color="#B8860B", border_width=3, border_color="black", corner_radius=10)
-        btnMode.configure(fg_color="#99621E", hover_color="#F0E68C", text_color="#B8860B", border_width=3, border_color="black", corner_radius=10)
-        navigation.configure(fg_color="#B8860B")
-        index.configure(fg_color="#99621E")
-        reader.configure(fg_color="#99621E")
-        myLibrary.configure(fg_color="#99621E")
-        labelIndex.configure(text_color="#BDB76B")
-        recentlyOpened.configure(text_color="#BDB76B")
-        labelMyLibrary.configure(text_color="#BDB76B")
+        btnAddBook.configure(fg_color="#d3deed", hover_color="#87CEFA", text_color="#000080", border_width=3, border_color="black", corner_radius=10)
+        btnReader.configure(fg_color="#d3deed",hover_color="#87CEFA",text_color="#000080",border_width=3,border_color="black",corner_radius=10)
+        btnLibrary.configure(fg_color="#d3deed", hover_color="#87CEFA", text_color="#000080", border_width=3, border_color="black", corner_radius=10)
+        btnMain.configure(fg_color="#d3deed", hover_color="#87CEFA", text_color="#000080", border_width=3, border_color="black", corner_radius=10)
+        btnMode.configure(fg_color="#d3deed", hover_color="#87CEFA", text_color="#000080", border_width=3, border_color="black", corner_radius=10)
+        navigation.configure(fg_color="#000080")
+        index.configure(fg_color="#d3deed")
+        reader.configure(fg_color="#d3deed")
+        myLibrary.configure(fg_color="#d3deed")
+        labelIndex.configure(text_color="#214ccf")
+        recentlyOpened.configure(text_color="#214ccf")
+        labelMyLibrary.configure(text_color="#214ccf")
         btnExit.configure(font=("Verdana", 42, "bold"), width=160,fg_color="#FF7F50",hover_color="#FF4500",text_color="#DC143C",border_width=5,border_color="black",corner_radius=10)
-        entryVirtualAssistant.configure(font=("Verdana", 22, "bold"), width=420, height=60,border_width=3,corner_radius=10,border_color="black",fg_color="#B8860B")
-        btnIndex.configure(fg_color="#B8860B", hover_color="#F0E68C", text_color="#99621E", border_width=3, border_color="black", corner_radius=10)
-        btnMyLibrary.configure(font=("Verdana", 16, "bold"), width=90, height=35,text_color="#99621E",fg_color="#B8860B",border_width=3,border_color="black",corner_radius=10,hover_color="#F0E68C")
-        entryMyLibrary.configure(font=("Verdana", 18, "bold"), width=500, height=35,border_width=3,corner_radius=10,border_color="black",fg_color="#B8860B")
+        entryVirtualAssistant.configure(font=("Verdana", 22, "bold"), width=420, height=60,border_width=3,corner_radius=10,border_color="black",fg_color="#000080")
+        btnIndex.configure(fg_color="#000080", hover_color="#87CEFA", text_color="#d3deed", border_width=3, border_color="black", corner_radius=10)
+        btnMyLibrary.configure(font=("Verdana", 16, "bold"), width=90, height=35,text_color="#d3deed",fg_color="#000080",border_width=3,border_color="black",corner_radius=10,hover_color="#87CEFA")
+        entryMyLibrary.configure(font=("Verdana", 18, "bold"), width=500, height=35,border_width=3,corner_radius=10,border_color="black",fg_color="#000080")
         btnDelete.configure(fg_color="#FF7F50", text_color="#DC143C", hover_color="#FF4500")
 
 
@@ -664,14 +664,14 @@ def deleteNothingWasFound():
 
 
 
-labelIndex = customtkinter.CTkLabel(index, text="Главная", text_color="#BDB76B")
+labelIndex = customtkinter.CTkLabel(index, text="Главная", text_color="#214ccf")
 labelIndex.configure(font=("Verdana", 64, "bold"))
 labelIndex.place(relx=0.4, rely=0.01)
 
 labelLogo = customtkinter.CTkLabel(index, image=logo, text="")
 labelLogo.place(relx=0.85, rely=0.01)
 
-recentlyOpened = customtkinter.CTkLabel(index, text="Недавно добавленные:", text_color="#BDB76B")
+recentlyOpened = customtkinter.CTkLabel(index, text="Недавно добавленные:", text_color="#214ccf")
 recentlyOpened.configure(font=("Verdana", 50, "bold"))
 recentlyOpened.place(relx=0.14, rely=0.25)
 
@@ -680,7 +680,7 @@ entryVirtualAssistant.configure(font=("Verdana", 22, "bold"), width=420, height=
                                 border_width=3,
                                 corner_radius=10,
                                 border_color="black",
-                                fg_color="#B8860B")
+                                fg_color="#000080")
 entryVirtualAssistant.insert(5, "Введите запрос...")
 entryVirtualAssistant.bind("<Button-1>", clearEntryVirtualAssistant)
 entryVirtualAssistant.place(relx=0.30, rely=0.12)
@@ -688,17 +688,17 @@ entryVirtualAssistant.place(relx=0.30, rely=0.12)
 btnIndex = customtkinter.CTkButton(index, text="Виртуальный\n помощник", command=lambda: startAnswer(mainResponse),
                                    compound="right", image=robot)
 btnIndex.configure(font=("Verdana", 16, "bold"), width=90,
-                   text_color="#99621E",
-                   fg_color="#B8860B",
+                   text_color="#d3deed",
+                   fg_color="#000080",
                    border_width=3,
                    border_color="black",
                    corner_radius=10,
-                   hover_color="#F0E68C")
+                   hover_color="#87CEFA")
 index.btnIndex = btnIndex
 btnIndex.place(relx=0.54, rely=0.12)
 
 statisticsLabel = customtkinter.CTkButton(index, text=getStatistics(), command=clean)
-statisticsLabel.configure(font=("Verdana", 24, "bold"))
+statisticsLabel.configure(font=("Verdana", 24, "bold"), fg_color="#000080", hover_color="#87CEFA")
 index.statisticsLabel = statisticsLabel
 statisticsLabel.place(relx=0.3, rely=0.88)
 
@@ -707,7 +707,7 @@ entryMyLibrary.configure(font=("Verdana", 18, "bold"), width=500, height=45,
                          border_width=3,
                          corner_radius=10,
                          border_color="black",
-                         fg_color="#B8860B")
+                         fg_color="#000080")
 
 entryMyLibrary.insert(5, "Введите запрос")
 entryMyLibrary.bind("<Button-1>", clearEntryMyLibrary)
@@ -717,12 +717,12 @@ entryMyLibrary.place(relx=0.31, rely=0.12)
 btnMyLibrary = customtkinter.CTkButton(myLibrary, text="Искать", command=ClickToFindBooks, image=search, compound="left")
 myLibrary.btnMyLibrary = btnMyLibrary
 btnMyLibrary.configure(font=("Verdana", 16, "bold"), width=90, height=35,
-                       text_color="#99621E",
-                       fg_color="#B8860B",
+                       text_color="#d3deed",
+                       fg_color="#000080",
                        border_width=3,
                        border_color="black",
                        corner_radius=10,
-                       hover_color="#F0E68C")
+                       hover_color="#87CEFA")
 btnMyLibrary.place(relx=0.58, rely=0.12)
 
 btnDelete = customtkinter.CTkButton(myLibrary, text="Удалить книги", command=deleteBooks)
@@ -737,7 +737,7 @@ btnDelete.configure(font=("Verdana", 16, "bold"), width=90, height=35,
 btnDelete.place(relx=0.68, rely=0.12)
 
 
-labelMyLibrary = customtkinter.CTkLabel(myLibrary, text="Моя библиотека", text_color="#BDB76B")
+labelMyLibrary = customtkinter.CTkLabel(myLibrary, text="Моя библиотека", text_color="#214ccf")
 labelMyLibrary.configure(font=("Verdana", 64, "bold"))
 labelMyLibrary.place(relx=0.31, rely=0.01)
 
@@ -753,45 +753,45 @@ readerTextBox.bind("<Button-3>", lambda event: processText())
 
 readerFontIncrease = customtkinter.CTkButton(reader, text="Тт+", command=lambda: changeFont(CHANGEVALUE))
 readerFontIncrease.place(relx=0.13, rely=0.005)
-readerFontIncrease.configure(font=("Calibre", 24), width=45)
+readerFontIncrease.configure(font=("Calibre", 24), width=45, fg_color="#000080", hover_color="#87CEFA")
 
 readerFontReduce = customtkinter.CTkButton(reader, text="Тт-", command=lambda: changeFont(-CHANGEVALUE))
 readerFontReduce.place(relx=0.16, rely=0.005)
-readerFontReduce.configure(font=("Calibre", 24), width=45)
+readerFontReduce.configure(font=("Calibre", 24), width=45, fg_color="#000080", hover_color="#87CEFA")
 
 readerSpaceIncrease = customtkinter.CTkButton(reader, text="A+", command=lambda: changeTextSpacing(CHANGEVALUE))
 readerSpaceIncrease.place(relx=0.20, rely=0.005)
-readerSpaceIncrease.configure(font=("Calibre", 24), width=45)
+readerSpaceIncrease.configure(font=("Calibre", 24), width=45, fg_color="#000080", hover_color="#87CEFA")
 
 readerSpaceReduce = customtkinter.CTkButton(reader, text="A-", command=lambda: changeTextSpacing(-CHANGEVALUE))
 readerSpaceReduce.place(relx=0.225, rely=0.005)
-readerSpaceReduce.configure(font=("Calibre", 24), width=45)
+readerSpaceReduce.configure(font=("Calibre", 24), width=45, fg_color="#000080", hover_color="#87CEFA")
 
 readerTextColor = customtkinter.CTkButton(reader, text="Цвет текста", command=lambda: changeColor("text"))
 readerTextColor.place(relx=0.27, rely=0.005)
-readerTextColor.configure(font=("Calibre", 24), width=140)
+readerTextColor.configure(font=("Calibre", 24), width=140, fg_color="#000080", hover_color="#87CEFA")
 
 readerReaderColor = customtkinter.CTkButton(reader, text="Цвет фона", command=lambda: changeColor("reader"))
 readerReaderColor.place(relx=0.35, rely=0.005)
-readerReaderColor.configure(font=("Calibre", 24), width=100)
+readerReaderColor.configure(font=("Calibre", 24), width=100, fg_color="#000080", hover_color="#87CEFA")
 
 readerSpeak = customtkinter.CTkButton(reader, text="Пересказ", command=startReading)
 readerSpeak.place(relx=0.5, rely=0.005)
-readerSpeak.configure(font=("Calibre", 26), width=100)
+readerSpeak.configure(font=("Calibre", 26), width=100, fg_color="#000080", hover_color="#87CEFA")
 
 readerStopSpeak = customtkinter.CTkButton(reader, text="Стоп", command=stopReading)
 readerStopSpeak.place(relx=0.57, rely=0.005)
-readerStopSpeak.configure(font=("Calibre", 26), width=100)
+readerStopSpeak.configure(font=("Calibre", 26), width=100, fg_color="#000080", hover_color="#87CEFA")
 
 readerReaderClean = customtkinter.CTkButton(reader, text="Очистить настройки", command=cleanReaderSettings)
 readerReaderClean.place(relx=0.8, rely=0.005)
-readerReaderClean.configure(font=("Calibre", 24), width=100)
+readerReaderClean.configure(font=("Calibre", 24), width=100, fg_color="#000080", hover_color="#87CEFA")
 
 btnMain = customtkinter.CTkButton(navigation, text="Главная", command=lambda: showFrame(index))
 btnMain.configure(font=("Verdana", 32, "bold"), width=50,
-                  fg_color="#99621E",
-                  hover_color="#F0E68C",
-                  text_color="#B8860B",
+                  fg_color="#d3deed",
+                  hover_color="#87CEFA",
+                  text_color="#214ccf",
                   border_width=3,
                   border_color="black",
                   corner_radius=10)
@@ -799,9 +799,9 @@ btnMain.place(relx=0.07, rely=0.06)
 
 btnLibrary = customtkinter.CTkButton(navigation, text="Моя\nбиблиотека", command=lambda: showFrame(myLibrary))
 btnLibrary.configure(font=("Verdana", 22, "bold"), width=30,
-                     fg_color="#99621E",
-                     hover_color="#F0E68C",
-                     text_color="#B8860B",
+                     fg_color="#d3deed",
+                     hover_color="#87CEFA",
+                     text_color="#214ccf",
                      border_width=3,
                      border_color="black",
                      corner_radius=10)
@@ -809,9 +809,9 @@ btnLibrary.place(relx=0.07, rely=0.13)
 
 btnReader = customtkinter.CTkButton(navigation, text="Читалка", command=lambda: showFrame(reader))
 btnReader.configure(font=("Verdana", 32, "bold"), width=170, height=60,
-                    fg_color="#99621E",
-                    hover_color="#F0E68C",
-                    text_color="#B8860B",
+                    fg_color="#d3deed",
+                    hover_color="#87CEFA",
+                    text_color="#214ccf",
                     border_width=3,
                     border_color="black",
                     corner_radius=10)
@@ -819,9 +819,9 @@ btnReader.place(relx=0.07, rely=0.21)
 
 btnAddBook = customtkinter.CTkButton(navigation, text="Добавить\nкнигу", command=clickToAddBook)
 btnAddBook.configure(font=("Verdana", 22, "bold"), width=175,
-                     fg_color="#99621E",
-                     hover_color="#F0E68C",
-                     text_color="#B8860B",
+                     fg_color="#d3deed",
+                     hover_color="#87CEFA",
+                     text_color="#214ccf",
                      border_width=3,
                      border_color="black",
                      corner_radius=10)
@@ -829,9 +829,9 @@ btnAddBook.place(relx=0.07, rely=0.29)
 
 btnMode = customtkinter.CTkButton(navigation, text="Режимы", command=lambda: clickToToggleMode())
 btnMode.configure(font=("Verdana", 32, "bold"), width=170, height=60,
-                    fg_color="#99621E",
-                    hover_color="#F0E68C",
-                    text_color="#B8860B",
+                  fg_color="#d3deed",
+                  hover_color="#87CEFA",
+                  text_color="#214ccf",
                     border_width=3,
                     border_color="black",
                     corner_radius=10)
