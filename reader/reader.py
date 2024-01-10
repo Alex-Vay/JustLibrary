@@ -81,7 +81,7 @@ def readBook(filepath):
         case _:
             return "Я не работаю с таким форматом(("
     metadata.text = re.sub(r"(?<!\n)\n(?!\n)", " ", metadata.text)
-    metadata.text = metadata.text.replace("\n\n", "\n").replace("_", "\t")
+    metadata.text = metadata.text.replace("\n\n", "\n   ").replace("_", "\t")
     startIndex = metadata.text.find("* * *")
     endIndex = metadata.text.find("* * *", startIndex + 3)
     metadata.text = metadata.text[:startIndex] + metadata.text[endIndex+2:]
